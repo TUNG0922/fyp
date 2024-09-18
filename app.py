@@ -137,29 +137,41 @@ def join_activity():
     if not activity:
         return jsonify({'message': 'Activity not found'}), 404
 
-    user_name = user.get('name')
-    user_email = user.get('email')
-    user_role = user.get('role')
-
-    activity_name = activity.get('name')
-    activity_location = activity.get('location')
-    activity_date = activity.get('date')
+    existing_join = join_activity_collection.find_one({'user_id': user_id, 'activity_id': activity_id})
+    if existing_join:
+        return jsonify({'message': 'You have already joined the activity'}), 400
 
     try:
         join_activity_collection.insert_one({
             'user_id': user_id,
-            'user_name': user_name,
-            'user_email': user_email,
-            'user_role': user_role,
             'activity_id': activity_id,
-            'activity_name': activity_name,
-            'activity_location': activity_location,
-            'activity_date': activity_date,
             'joined_at': datetime.datetime.utcnow()
         })
         return jsonify({'message': 'Activity joined successfully'}), 201
     except Exception as e:
         return jsonify({'message': 'An error occurred while joining the activity', 'error': str(e)}), 500
+
+@app.route('/api/check_join_status', methods=['POST'])
+def check_join_status():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    activity_id = data.get('activity_id')
+
+    if not user_id or not activity_id:
+        return jsonify({'message': 'User ID and Activity ID are required'}), 400
+
+    if not ObjectId.is_valid(user_id) or not ObjectId.is_valid(activity_id):
+        return jsonify({'message': 'Invalid User ID or Activity ID format'}), 400
+
+    try:
+        join_record = join_activity_collection.find_one({'user_id': user_id, 'activity_id': activity_id})
+
+        if join_record:
+            return jsonify({'hasJoined': True}), 200
+        else:
+            return jsonify({'hasJoined': False}), 200
+    except Exception as e:
+        return jsonify({'message': 'An error occurred while checking join status', 'error': str(e)}), 500
 
 @app.route('/api/add_review', methods=['POST'])
 def add_review():
@@ -201,6 +213,27 @@ def get_reviews():
         return jsonify({'reviews': reviews}), 200
     except Exception as e:
         return jsonify({'message': 'An error occurred while fetching reviews', 'error': str(e)}), 500
+
+@app.route('/api/delete_review', methods=['POST'])
+def delete_review():
+    data = request.get_json()
+    review_id = data.get('review_id')
+
+    if not review_id:
+        return jsonify({'message': 'Review ID is required'}), 400
+
+    # Validate ObjectId format
+    if not ObjectId.is_valid(review_id):
+        return jsonify({'message': 'Invalid Review ID format'}), 400
+
+    try:
+        result = reviews_collection.delete_one({'_id': ObjectId(review_id)})
+        if result.deleted_count:
+            return jsonify({'message': 'Review deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'Review not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'An error occurred while deleting the review', 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

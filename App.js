@@ -9,13 +9,17 @@ import DashboardScreenPlatformAdmin from './screens/DashboardScreenPlatformAdmin
 import DashboardScreenOrganizationAdmin from './screens/DashboardScreenOrganizationAdmin';
 import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer'; 
 import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; // Import for ActivityDetailsScreen
+import NotificationVolunteer from './screens/NotificationVolunteer'; // Import for NotificationVolunteer
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Stack = createStackNavigator();
 
-function NotificationIcon() {
+function NotificationIcon({ navigation }) {
   return (
-    <TouchableOpacity onPress={() => console.log('Notification pressed')} style={styles.notificationButton}>
+    <TouchableOpacity
+      onPress={() => navigation.navigate('NotificationVolunteer')}
+      style={styles.notificationButton}
+    >
       <Icon name="bell" size={24} color="#fff" />
     </TouchableOpacity>
   );
@@ -53,6 +57,7 @@ export default function App() {
             fontWeight: 'bold',
           },
           headerLeft: () => null, // Removes the back button
+          headerRight: () => <NotificationIcon navigation={navigation} />,
         })}
       >
         <Stack.Screen
@@ -70,7 +75,6 @@ export default function App() {
           component={DashboardScreenVolunteer}
           options={{ 
             headerTitle: () => <LogoTitle />,
-            headerRight: () => <NotificationIcon />,
           }}
         />
         <Stack.Screen
@@ -78,7 +82,6 @@ export default function App() {
           component={DashboardScreenPlatformAdmin}
           options={{ 
             headerTitle: () => <LogoTitle />,
-            headerRight: () => <NotificationIcon />,
           }}
         />
         <Stack.Screen
@@ -86,7 +89,6 @@ export default function App() {
           component={DashboardScreenOrganizationAdmin}
           options={{ 
             headerTitle: () => <LogoTitle />,
-            headerRight: () => <NotificationIcon />,
           }}
         />
         <Stack.Screen
@@ -94,7 +96,6 @@ export default function App() {
           component={ActivityDetailsVolunteer}
           options={{ 
             headerTitle: 'Activity Details',
-            headerRight: () => <NotificationIcon />,
             headerLeft: () => null, // Ensures the back button is removed
           }}
         />
@@ -103,8 +104,14 @@ export default function App() {
           component={ActivityDetailsScreen} // Added for organization admin
           options={{ 
             headerTitle: 'Activity Details',
-            headerRight: () => <NotificationIcon />,
             headerLeft: () => null, // Ensures the back button is removed
+          }}
+        />
+        <Stack.Screen
+          name="NotificationVolunteer"
+          component={NotificationVolunteer}
+          options={{ 
+            headerTitle: 'Notifications',
           }}
         />
       </Stack.Navigator>

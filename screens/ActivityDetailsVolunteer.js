@@ -1,23 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { AirbnbRating } from 'react-native-ratings'; // Import the rating component
+import { AirbnbRating } from 'react-native-ratings';
+import { useNavigation } from '@react-navigation/native';
 
 const ActivityDetailsVolunteer = ({ route }) => {
   const { activity } = route.params;
   const [reviewText, setReviewText] = useState('');
-  const [reviews, setReviews] = useState(activity.reviews || []); // Initialize with existing reviews
-  const [rating, setRating] = useState(0); // State to handle the star rating
+  const [reviews, setReviews] = useState([]);
+  const [rating, setRating] = useState(0);
+  const [hasJoined, setHasJoined] = useState(false);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const checkJoinStatus = async () => {
+      try {
+        const userId = '66e0681ef929b768de1a3392'; // Replace with actual user ID
+        const response = await fetch('http://10.0.2.2:5000/api/check_join_status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ user_id: userId, activity_id: activity._id }),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          setHasJoined(result.hasJoined);
+        } else {
+          Alert.alert('Error', result.message || 'An error occurred while checking join status.');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Network error. Please try again later.');
+      }
+    };
+
+    const fetchReviews = async () => {
+      try {
+        const response = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
+        const result = await response.json();
+        if (response.ok) {
+          setReviews(result.reviews);
+        } else {
+          Alert.alert('Error', result.message || 'An error occurred while fetching reviews.');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Network error. Please try again later.');
+      }
+    };
+
+    fetchReviews();
+    checkJoinStatus();
+  }, [activity._id]);
 
   const handleAddReview = async () => {
     if (reviewText.trim()) {
       const newReview = {
-        id: Math.random().toString(), // Generate a unique ID for the review (you may use a different strategy in production)
         text: reviewText,
-        date: new Date().toLocaleDateString(), // Current date
-        rating, // Include the rating
-        activity_id: activity._id, // The ID of the activity being reviewed
+        date: new Date().toLocaleDateString(),
+        rating,
+        activity_id: activity._id,
       };
-  
+
       try {
         const response = await fetch('http://10.0.2.2:5000/api/add_review', {
           method: 'POST',
@@ -26,13 +69,13 @@ const ActivityDetailsVolunteer = ({ route }) => {
           },
           body: JSON.stringify(newReview),
         });
-  
+
         const result = await response.json();
-  
+
         if (response.ok) {
           setReviews((prevReviews) => [...prevReviews, newReview]);
-          setReviewText(''); // Clear review input
-          setRating(0); // Reset rating after adding review
+          setReviewText('');
+          setRating(0);
           Alert.alert('Success', 'Review added successfully!');
         } else {
           Alert.alert('Error', result.message || 'An error occurred while adding the review.');
@@ -46,11 +89,15 @@ const ActivityDetailsVolunteer = ({ route }) => {
   };
 
   const handleJoinActivity = async () => {
+    if (hasJoined) {
+      Alert.alert('Notice', 'You have already joined this activity.');
+      return;
+    }
+
     try {
-      // Replace with actual user ID, possibly from your app's authentication state
-      const userId = '66e0681ef929b768de1a3392'; // Example user ID
-      const activityId = activity._id; // Example activity ID, ensure it's a valid ObjectId string
-  
+      const userId = '66e0681ef929b768de1a3392'; // Replace with actual user ID
+      const activityId = activity._id;
+
       const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
         method: 'POST',
         headers: {
@@ -61,21 +108,56 @@ const ActivityDetailsVolunteer = ({ route }) => {
           activity_id: activityId,
         }),
       });
-  
+
       const result = await response.json();
-  
+
       if (response.ok) {
-        Alert.alert('Success', 'You have joined the activity!');
+        setHasJoined(true);
+        navigation.navigate('NotificationVolunteer', { activity: activity });
       } else {
         Alert.alert('Error', result.message || 'An error occurred while joining the activity.');
       }
     } catch (error) {
       Alert.alert('Error', 'Network error. Please try again later.');
     }
-  };  
+  };
 
-  const handleDeleteReview = (id) => {
-    setReviews((prevReviews) => prevReviews.filter(review => review.id !== id));
+  const handleDeleteReview = async (id) => {
+    console.log('Attempting to delete review with ID:', id);
+
+    if (!id) {
+      Alert.alert('Error', 'Review ID is missing.');
+      return;
+    }
+
+    const isValidId = /^[0-9a-fA-F]{24}$/.test(id);
+
+    if (!isValidId) {
+      Alert.alert('Error', 'Invalid review ID format.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://10.0.2.2:5000/api/delete_review', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ review_id: id }),
+      });
+
+      const result = await response.json();
+      console.log('Server response:', result);
+
+      if (response.ok) {
+        setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));
+        Alert.alert('Success', 'Review deleted successfully!');
+      } else {
+        Alert.alert('Error', result.message || 'An error occurred while deleting the review.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again later.');
+    }
   };
 
   const renderReview = ({ item }) => (
@@ -89,16 +171,9 @@ const ActivityDetailsVolunteer = ({ route }) => {
         defaultRating={item.rating}
         starContainerStyle={styles.ratingStars}
       />
-      <TouchableOpacity onPress={() => handleDeleteReview(item.id)} style={styles.deleteButton}>
+      <TouchableOpacity onPress={() => handleDeleteReview(item._id)} style={styles.deleteButton}>
         <Text style={styles.deleteButtonText}>Delete</Text>
       </TouchableOpacity>
-    </View>
-  );
-
-  const renderReply = ({ item }) => (
-    <View style={styles.replyItem}>
-      <Text style={styles.replyText}>{item.text}</Text>
-      <Text style={styles.replyDate}>{item.date}</Text>
     </View>
   );
 
@@ -112,7 +187,12 @@ const ActivityDetailsVolunteer = ({ route }) => {
           <Text style={styles.location}>{item.location}</Text>
           <Text style={styles.date}>{item.date}</Text>
           <Text style={styles.description}>{item.description}</Text>
-          <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
+          {!hasJoined && (
+            <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
+          )}
+          {hasJoined && (
+            <Text style={styles.joinedText}>You have joined this activity!</Text>
+          )}
         </View>
       );
     } else if (item.type === 'ratings') {
@@ -143,20 +223,8 @@ const ActivityDetailsVolunteer = ({ route }) => {
           <FlatList
             data={reviews}
             renderItem={renderReview}
-            keyExtractor={(review) => review.id}
+            keyExtractor={(review) => review._id}
             contentContainerStyle={styles.reviewsList}
-          />
-        </View>
-      );
-    } else if (item.type === 'repliesSection') {
-      return (
-        <View style={styles.repliesSection}>
-          <Text style={styles.repliesTitle}>Replies</Text>
-          <FlatList
-            data={activity.replies || []} // Assuming `activity.replies` contains the third-party replies
-            renderItem={renderReply}
-            keyExtractor={(reply) => reply.id}
-            contentContainerStyle={styles.repliesList}
           />
         </View>
       );
@@ -169,7 +237,6 @@ const ActivityDetailsVolunteer = ({ route }) => {
     { id: '2', type: 'details', name: activity.name, location: activity.location, date: activity.date, description: activity.description },
     { id: '3', type: 'ratings' },
     { id: '4', type: 'reviewsSection' },
-    { id: '5', type: 'repliesSection' },
   ];
 
   return (
@@ -288,34 +355,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  repliesSection: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    elevation: 2,
-  },
-  repliesTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  repliesList: {
-    paddingBottom: 20,
-  },
-  replyItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    marginBottom: 10,
-  },
-  replyText: {
+  joinedText: {
     fontSize: 16,
-    marginBottom: 5,
-  },
-  replyDate: {
-    fontSize: 14,
-    color: '#777',
+    color: '#00BFAE',
+    marginTop: 10,
+    fontWeight: 'bold',
   },
 });
 
