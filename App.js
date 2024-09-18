@@ -7,7 +7,8 @@ import SignUpScreen from './screens/SignUpScreen';
 import DashboardScreenVolunteer from './screens/DashboardScreenVolunteer';
 import DashboardScreenPlatformAdmin from './screens/DashboardScreenPlatformAdmin';
 import DashboardScreenOrganizationAdmin from './screens/DashboardScreenOrganizationAdmin';
-import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer'; // Updated import for ActivityDetailsVolunteer
+import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer'; 
+import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; // Import for ActivityDetailsScreen
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Stack = createStackNavigator();
@@ -91,6 +92,15 @@ export default function App() {
         <Stack.Screen
           name="ActivityDetailsVolunteer"
           component={ActivityDetailsVolunteer}
+          options={{ 
+            headerTitle: 'Activity Details',
+            headerRight: () => <NotificationIcon />,
+            headerLeft: () => null, // Ensures the back button is removed
+          }}
+        />
+        <Stack.Screen
+          name="ActivityDetailsScreen"
+          component={ActivityDetailsScreen} // Added for organization admin
           options={{ 
             headerTitle: 'Activity Details',
             headerRight: () => <NotificationIcon />,

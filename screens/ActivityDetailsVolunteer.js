@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings'; // Import the rating component
 
 const ActivityDetailsVolunteer = ({ route }) => {
@@ -8,24 +8,71 @@ const ActivityDetailsVolunteer = ({ route }) => {
   const [reviews, setReviews] = useState(activity.reviews || []); // Initialize with existing reviews
   const [rating, setRating] = useState(0); // State to handle the star rating
 
-  const handleAddReview = () => {
+  const handleAddReview = async () => {
     if (reviewText.trim()) {
       const newReview = {
-        id: Math.random().toString(), // Generate a unique ID for the review
+        id: Math.random().toString(), // Generate a unique ID for the review (you may use a different strategy in production)
         text: reviewText,
         date: new Date().toLocaleDateString(), // Current date
         rating, // Include the rating
+        activity_id: activity._id, // The ID of the activity being reviewed
       };
-      setReviews((prevReviews) => [...prevReviews, newReview]);
-      setReviewText(''); // Clear review input
-      setRating(0); // Reset rating after adding review
+  
+      try {
+        const response = await fetch('http://10.0.2.2:5000/api/add_review', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newReview),
+        });
+  
+        const result = await response.json();
+  
+        if (response.ok) {
+          setReviews((prevReviews) => [...prevReviews, newReview]);
+          setReviewText(''); // Clear review input
+          setRating(0); // Reset rating after adding review
+          Alert.alert('Success', 'Review added successfully!');
+        } else {
+          Alert.alert('Error', result.message || 'An error occurred while adding the review.');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Network error. Please try again later.');
+      }
+    } else {
+      Alert.alert('Error', 'Review text cannot be empty.');
     }
   };
 
-  const handleJoinActivity = () => {
-    // Handle joining the activity here
-    console.log('Activity joined:', activity.name);
-  };
+  const handleJoinActivity = async () => {
+    try {
+      // Replace with actual user ID, possibly from your app's authentication state
+      const userId = '66e0681ef929b768de1a3392'; // Example user ID
+      const activityId = activity._id; // Example activity ID, ensure it's a valid ObjectId string
+  
+      const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          activity_id: activityId,
+        }),
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        Alert.alert('Success', 'You have joined the activity!');
+      } else {
+        Alert.alert('Error', result.message || 'An error occurred while joining the activity.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again later.');
+    }
+  };  
 
   const handleDeleteReview = (id) => {
     setReviews((prevReviews) => prevReviews.filter(review => review.id !== id));
@@ -190,6 +237,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
+  ratingStars: {
+    marginVertical: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
   reviewsSection: {
     marginTop: 20,
     backgroundColor: '#fff',
@@ -203,27 +260,33 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   reviewsList: {
-    marginBottom: 15,
+    paddingBottom: 20,
   },
   reviewItem: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
     marginBottom: 10,
-    borderColor: '#ddd',
-    borderWidth: 1,
   },
   reviewText: {
     fontSize: 16,
-    color: '#333',
+    marginBottom: 5,
   },
   reviewDate: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 5,
+    color: '#777',
+    marginBottom: 5,
   },
-  ratingStars: {
-    marginBottom: 10,
+  deleteButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f44336',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   repliesSection: {
     marginTop: 20,
@@ -238,44 +301,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   repliesList: {
-    marginBottom: 15,
+    paddingBottom: 20,
   },
   replyItem: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
     marginBottom: 10,
-    borderColor: '#ddd',
-    borderWidth: 1,
   },
   replyText: {
     fontSize: 16,
-    color: '#333',
+    marginBottom: 5,
   },
   replyDate: {
     fontSize: 14,
-    color: '#888',
-    marginTop: 5,
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff',
-  },
-  deleteButton: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#ff4d4d',
-    borderRadius: 5,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    color: '#777',
   },
 });
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, FlatList, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import * as ImagePicker from 'expo-image-picker'; // Use Expo Image Picker
+import * as ImagePicker from 'expo-image-picker';
 
 // HomeScreen component
 const HomeScreen = () => (
@@ -114,7 +114,7 @@ const DiscoverScreen = ({ navigation }) => {
   const renderActivityItem = ({ item }) => (
     <TouchableOpacity
       style={styles.activityItem}
-      onPress={() => navigation.navigate('ActivityDetails', { activity: item })}
+      onPress={() => navigation.navigate('ActivityDetailsScreen', { activity: item })} // Navigates to ActivityDetailsScreen with activity data
     >
       {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.activityImage} />}
       <View style={styles.activityDetails}>
@@ -125,7 +125,7 @@ const DiscoverScreen = ({ navigation }) => {
       </View>
     </TouchableOpacity>
   );
-
+  
   return (
     <SafeAreaView style={styles.screenContainer}>
       <FlatList
@@ -298,64 +298,64 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginLeft: 10,
-    backgroundColor: '#ccc',
+    backgroundColor: '#FF6347',
     padding: 10,
     borderRadius: 8,
+    alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#000',
+    color: '#fff',
     fontSize: 16,
   },
   addButton: {
     position: 'absolute',
-    bottom: 30,
-    right: 30,
-    backgroundColor: '#547DBE',
-    padding: 15,
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#00BFAE',
+    width: 60,
+    height: 60,
     borderRadius: 30,
-    justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
+    justifyContent: 'center',
+    elevation: 5,
   },
   activityItem: {
+    flexDirection: 'row',
+    padding: 10,
+    marginVertical: 5,
     backgroundColor: '#fff',
-    padding: 15,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   activityImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 10,
+    width: 100,
+    height: 100,
+    borderRadius: 8,
   },
   activityDetails: {
-    paddingVertical: 10,
+    flex: 1,
+    marginLeft: 10,
   },
   activityName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
   activityLocation: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
+    color: '#888',
   },
   activityDate: {
     fontSize: 14,
-    color: '#999',
+    color: '#888',
   },
   activityDescription: {
     fontSize: 14,
     color: '#333',
   },
 });
-
 
 export default DashboardScreenOrganizationAdmin;
