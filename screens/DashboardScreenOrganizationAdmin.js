@@ -7,7 +7,6 @@ import * as ImagePicker from 'expo-image-picker';
 // HomeScreen component
 const HomeScreen = () => (
   <View style={styles.screenContainer}>
-    <Text style={styles.screenText}>Home Screen</Text>
     {/* Add any content or components for the HomeScreen here */}
   </View>
 );
@@ -125,7 +124,7 @@ const DiscoverScreen = ({ navigation }) => {
       </View>
     </TouchableOpacity>
   );
-  
+
   return (
     <SafeAreaView style={styles.screenContainer}>
       <FlatList
@@ -164,6 +163,7 @@ const DiscoverScreen = ({ navigation }) => {
             style={[styles.input, styles.textArea]}
             placeholder="Enter description"
             value={description}
+            onChangeText={setDescription}
             multiline
           />
 
@@ -189,13 +189,23 @@ const DiscoverScreen = ({ navigation }) => {
   );
 };
 
-// ProfileScreen component
-const ProfileScreen = () => (
-  <View style={styles.screenContainer}>
-    <Text style={styles.screenText}>Profile Screen</Text>
-    {/* Add any content or components for the ProfileScreen here */}
-  </View>
-);
+// ProfileScreen component with Logout button
+const ProfileScreen = ({ navigation }) => {
+  const handleLogout = () => {
+    // Implement your logout logic here
+    // For example, clearing user session or navigating to the login screen
+    navigation.navigate('SignIn'); // Assuming you have a 'LoginScreen' defined in your navigator
+  };
+
+  return (
+    <View style={styles.screenContainer}>
+      {/* Add any content or components for the ProfileScreen here */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const Tab = createBottomTabNavigator();
 
@@ -223,9 +233,9 @@ const DashboardScreenOrganizationAdmin = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 };
@@ -355,6 +365,21 @@ const styles = StyleSheet.create({
   activityDescription: {
     fontSize: 14,
     color: '#333',
+  },
+  logoutButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#FF6347', // Or any color that fits your design
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

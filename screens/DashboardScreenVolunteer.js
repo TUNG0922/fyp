@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Button } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import ActivityDetailsVolunteer from './ActivityDetailsVolunteer'; // Import the component
@@ -10,16 +11,37 @@ import ActivityDetailsVolunteer from './ActivityDetailsVolunteer'; // Import the
 function HomeScreen() {
   return (
     <View style={styles.screen}>
-      <Text style={styles.text}>Home Screen</Text>
+
     </View>
   );
 }
 
-// ProfileScreen Component
+// ProfileScreen Component with Logout Button
 function ProfileScreen() {
+  const navigation = useNavigation(); // Hook to access navigation prop
+
+  const handleLogout = async () => {
+    try {
+      // Clear the token or any stored user data
+      await AsyncStorage.removeItem('userToken'); // Ensure 'userToken' is the correct key for your token
+      
+      // Navigate to the SignIn screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }], // Use 'SignIn' which matches the route name in your App.js
+      });
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
   return (
     <View style={styles.screen}>
-      <Text style={styles.text}>Profile Screen</Text>
+
+      {/* Add the logout button at the bottom */}
+      <View style={styles.logoutButtonContainer}>
+        <Button title="Logout" onPress={handleLogout} color="#00BFAE" />
+      </View>
     </View>
   );
 }
@@ -35,7 +57,7 @@ function DiscoverScreen() {
         const response = await fetch('http://10.0.2.2:5000/api/activities');
         const data = await response.json();
         console.log('Fetched activities:', data);
-        setActivities(data);
+        setActivities(data); // Assuming data is an array of activities
       } catch (error) {
         console.error('Error fetching activities:', error);
       }
@@ -166,6 +188,13 @@ const styles = StyleSheet.create({
   activityDate: {
     fontSize: 14,
     color: '#888',
+  },
+  logoutButtonContainer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
+    padding: 20,
   },
 });
 
