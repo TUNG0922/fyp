@@ -1,34 +1,50 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Button } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
-import ActivityDetailsVolunteer from './ActivityDetailsVolunteer'; // Import the component
+import ActivityDetailsVolunteer from './ActivityDetailsVolunteer'; 
+import { TabView, SceneMap } from 'react-native-tab-view';
 
-// HomeScreen Component
+// HomeScreen Component with Tabs
 function HomeScreen() {
-  return (
-    <View style={styles.screen}>
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'pending', title: 'Pending' },
+    { key: 'upcoming', title: 'Upcoming' },
+    { key: 'completed', title: 'Completed' },
+  ]);
 
+  const renderScene = SceneMap({
+    pending: () => <Text style={styles.tabContent}></Text>,
+    upcoming: () => <Text style={styles.tabContent}></Text>,
+    completed: () => <Text style={styles.tabContent}></Text>,
+  });
+
+  return (
+    <View style={styles.container}>
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        onIndexChange={setIndex}
+        initialLayout={{ width: 300 }} // Adjust based on your design
+      />
     </View>
   );
 }
 
 // ProfileScreen Component with Logout Button
 function ProfileScreen() {
-  const navigation = useNavigation(); // Hook to access navigation prop
+  const navigation = useNavigation();
 
   const handleLogout = async () => {
     try {
-      // Clear the token or any stored user data
-      await AsyncStorage.removeItem('userToken'); // Ensure 'userToken' is the correct key for your token
-      
-      // Navigate to the SignIn screen
+      await AsyncStorage.removeItem('userToken'); 
       navigation.reset({
         index: 0,
-        routes: [{ name: 'SignIn' }], // Use 'SignIn' which matches the route name in your App.js
+        routes: [{ name: 'SignIn' }],
       });
     } catch (error) {
       console.error('Error logging out:', error);
@@ -37,8 +53,6 @@ function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-
-      {/* Add the logout button at the bottom */}
       <View style={styles.logoutButtonContainer}>
         <Button title="Logout" onPress={handleLogout} color="#00BFAE" />
       </View>
@@ -49,7 +63,7 @@ function ProfileScreen() {
 // DiscoverScreen Component
 function DiscoverScreen() {
   const [activities, setActivities] = useState([]);
-  const navigation = useNavigation(); // Hook to access navigation prop
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -57,7 +71,7 @@ function DiscoverScreen() {
         const response = await fetch('http://10.0.2.2:5000/api/activities');
         const data = await response.json();
         console.log('Fetched activities:', data);
-        setActivities(data); // Assuming data is an array of activities
+        setActivities(data); 
       } catch (error) {
         console.error('Error fetching activities:', error);
       }
@@ -118,9 +132,9 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 }
@@ -140,7 +154,7 @@ function DashboardScreenVolunteer() {
         component={ActivityDetailsVolunteer}
         options={{
           title: 'Activity Details',
-          headerLeft: () => null, // Removes the back button
+          headerLeft: () => null,
         }}
       />
     </Stack.Navigator>
@@ -149,6 +163,9 @@ function DashboardScreenVolunteer() {
 
 // Styles
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   screen: {
     flex: 1,
     justifyContent: 'center',
@@ -195,6 +212,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
+  },
+  tabContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: 18,
   },
 });
 

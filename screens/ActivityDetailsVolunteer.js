@@ -123,8 +123,6 @@ const ActivityDetailsVolunteer = ({ route }) => {
   };
 
   const handleDeleteReview = async (id) => {
-    console.log('Attempting to delete review with ID:', id);
-
     if (!id) {
       Alert.alert('Error', 'Review ID is missing.');
       return;
@@ -147,7 +145,6 @@ const ActivityDetailsVolunteer = ({ route }) => {
       });
 
       const result = await response.json();
-      console.log('Server response:', result);
 
       if (response.ok) {
         setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));

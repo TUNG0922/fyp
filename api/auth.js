@@ -41,6 +41,3 @@ export const signUp = async (name, email, password, role) => {
     throw error;
   }
 };
-
-
-  

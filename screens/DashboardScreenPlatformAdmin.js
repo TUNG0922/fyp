@@ -8,7 +8,6 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 function HomeScreen() {
   return (
     <View style={styles.screen}>
-      <Text style={styles.text}>Home Screen</Text>
     </View>
   );
 }
@@ -73,7 +72,6 @@ function ProfileScreen({ navigation }) {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.text}>Profile Screen</Text>
       <View style={styles.logoutButtonContainer}>
         <Button title="Log Out" onPress={handleLogout} color="#00BFAE" />
       </View>
@@ -108,9 +106,9 @@ function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }}/>
     </Tab.Navigator>
   );
 }
