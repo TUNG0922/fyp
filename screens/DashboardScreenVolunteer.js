@@ -1,9 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, FlatList, StyleSheet, Button, ActivityIndicator, Image, Share } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Share, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Create Top Tab Navigator
+const TopTab = createMaterialTopTabNavigator();
+
+// Pending Activities Component
+const PendingActivities = () => {
+  return (
+    <View style={styles.container}>
+      <Text>Pending Activities</Text>
+      {/* Fetch and display pending activities here */}
+    </View>
+  );
+};
+
+// Upcoming Activities Component
+const UpcomingActivities = () => {
+  return (
+    <View style={styles.container}>
+      <Text>Upcoming Activities</Text>
+      {/* Fetch and display upcoming activities here */}
+    </View>
+  );
+};
+
+// Completed Activities Component
+const CompletedActivities = () => {
+  return (
+    <View style={styles.container}>
+      <Text>Completed Activities</Text>
+      {/* Fetch and display completed activities here */}
+    </View>
+  );
+};
 
 // HomeScreen Component
 const HomeScreen = ({ username, userId }) => {
@@ -41,7 +75,7 @@ const DiscoverScreen = ({ username, userId }) => {
   const handleShare = async (activity) => {
     try {
       await Share.share({
-        message: `Check out this activity: ${activity.name}\n${activity.description}\nLocation: ${activity.location}\nDate: ${activity.date}`,
+        message: `Check out this activity: ${activity.name}\nLocation: ${activity.location}\nDate: ${activity.date}`,
       });
     } catch (error) {
       console.error('Error sharing activity:', error);
@@ -67,20 +101,25 @@ const DiscoverScreen = ({ username, userId }) => {
               <Text style={styles.activityName}>{item.name}</Text>
               <Text>{item.date}</Text>
               <Text>{item.location}</Text>
-              <Text>{item.description}</Text>
-              <Button
-                title="Details"
-                onPress={() => navigation.navigate('ActivityDetailsVolunteer', {
-                  activity: item,
-                  userId: userId,
-                  name: username,
-                })}
-              />
-              <Button
-                title="Share"
-                onPress={() => handleShare(item)}
-                color="#00BFAE"
-              />
+              {/* Removed description display */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => navigation.navigate('ActivityDetailsVolunteer', {
+                    activity: item,
+                    userId: userId,
+                    name: username,
+                  })}
+                >
+                  <Text style={styles.buttonText}>Details</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.shareButton]}
+                  onPress={() => handleShare(item)}
+                >
+                  <Text style={styles.buttonText}>Share</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         />
@@ -90,17 +129,14 @@ const DiscoverScreen = ({ username, userId }) => {
 };
 
 // ProfileScreen Component with Logout Button
-const ProfileScreen = ({ username, userId, password }) => {
+const ProfileScreen = ({ username, userId }) => {
   const navigation = useNavigation();
-
-  useEffect(() => {
-    console.log('ProfileScreen - username:', username, 'userId:', userId, 'password:', password);
-  }, [username, userId, password]);
 
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('userId'); 
       await AsyncStorage.removeItem('username');
+      await AsyncStorage.removeItem('password'); // Remove password as well
       navigation.navigate('SignIn');
     } catch (error) {
       console.error('Failed to logout:', error);
@@ -110,7 +146,9 @@ const ProfileScreen = ({ username, userId, password }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.profileText}>Profile: {username}</Text>
-      <Button title="Logout" onPress={handleLogout} color="#FF3D3D" />
+      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -118,6 +156,7 @@ const ProfileScreen = ({ username, userId, password }) => {
 // Tab Navigator
 const Tab = createBottomTabNavigator();
 
+// DashboardScreenVolunteer Component
 const DashboardScreenVolunteer = ({ route }) => {
   const { username, userId, password } = route.params;
 
@@ -125,7 +164,13 @@ const DashboardScreenVolunteer = ({ route }) => {
     <Tab.Navigator>
       <Tab.Screen 
         name="Home" 
-        children={() => <HomeScreen username={username} userId={userId} />} 
+        children={() => (
+          <TopTab.Navigator>
+            <TopTab.Screen name="Pending" component={PendingActivities} />
+            <TopTab.Screen name="Upcoming" component={UpcomingActivities} />
+            <TopTab.Screen name="Completed" component={CompletedActivities} />
+          </TopTab.Navigator>
+        )}
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="home" size={20} color={color} />
@@ -187,10 +232,40 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  button: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    backgroundColor: '#547DBE',
+    alignItems: 'center',
+  },
+  shareButton: {
+    backgroundColor: '#00BFAE',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   profileText: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  logoutButton: {
+    backgroundColor: '#FF3D3D',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
