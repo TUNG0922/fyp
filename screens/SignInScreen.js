@@ -16,15 +16,25 @@ const SignInScreen = ({ navigation }) => {
     try {
       const data = await signIn(email, password, role);
       console.log('Sign-in response:', data); // Check the response structure
-
+  
       if (data && data.message === 'Sign-in successful') {
         const userId = data.userId; // This should now contain the userId
         const username = data.username || 'LOG'; // Use the username or default to 'LOG'
+        
         if (userId) {
           await AsyncStorage.setItem('userId', userId); // Store userId
           await AsyncStorage.setItem('username', username); // Store username
           await AsyncStorage.setItem('password', password); // Store password
-          navigation.navigate(`Dashboard${role.replace(' ', '')}`, { userId, username, password });
+          await AsyncStorage.setItem('email', email); // Store email
+          
+          // Pass the role to the corresponding dashboard based on the selected role
+          if (role === 'Volunteer') {
+            navigation.navigate('DashboardVolunteer', { userId, username, password, email, role });
+          } else if (role === 'Organization Admin') {
+            navigation.navigate('DashboardOrganizationAdmin', { userId, username, password, email, role });
+          } else if (role === 'Platform Admin') {
+            navigation.navigate('DashboardPlatformAdmin', { userId, username, password, email, role });
+          }
         } else {
           Alert.alert('Sign-in Error', 'User ID is missing');
         }

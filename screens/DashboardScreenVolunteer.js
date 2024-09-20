@@ -101,7 +101,6 @@ const DiscoverScreen = ({ username, userId }) => {
               <Text style={styles.activityName}>{item.name}</Text>
               <Text>{item.date}</Text>
               <Text>{item.location}</Text>
-              {/* Removed description display */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.button}
@@ -129,14 +128,15 @@ const DiscoverScreen = ({ username, userId }) => {
 };
 
 // ProfileScreen Component with Logout Button
-const ProfileScreen = ({ username, userId }) => {
+const ProfileScreen = ({ username, userId, password, email, role }) => {
+  console.log('User Role:', role);
   const navigation = useNavigation();
 
   const handleLogout = async () => {
     try {
       await AsyncStorage.removeItem('userId'); 
       await AsyncStorage.removeItem('username');
-      await AsyncStorage.removeItem('password'); // Remove password as well
+      await AsyncStorage.removeItem('password');
       navigation.navigate('SignIn');
     } catch (error) {
       console.error('Failed to logout:', error);
@@ -146,6 +146,8 @@ const ProfileScreen = ({ username, userId }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.profileText}>Profile: {username}</Text>
+      <Text style={styles.userInfo}>Email: {email}</Text>
+      <Text style={styles.userInfo}>Role: {role}</Text>
       <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
@@ -156,9 +158,8 @@ const ProfileScreen = ({ username, userId }) => {
 // Tab Navigator
 const Tab = createBottomTabNavigator();
 
-// DashboardScreenVolunteer Component
 const DashboardScreenVolunteer = ({ route }) => {
-  const { username, userId, password } = route.params;
+  const { userId, username, password, email, role } = route.params;
 
   return (
     <Tab.Navigator>
@@ -186,7 +187,7 @@ const DashboardScreenVolunteer = ({ route }) => {
       />
       <Tab.Screen 
         name="Profile" 
-        children={() => <ProfileScreen username={username} userId={userId} password={password} />} 
+        children={() => <ProfileScreen username={username} userId={userId} password={password} email={email} role={role} />} // Pass role here
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="user" size={20} color={color} />
