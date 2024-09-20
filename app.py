@@ -78,6 +78,7 @@ def signin():
     return jsonify({
         'message': 'Sign-in successful',
         'userId': str(user['_id']),  # Return the user ID
+        'username': user['name'],     # Return the user's name
         'role': user['role']
     }), 200
 
@@ -135,6 +136,7 @@ def join_activity():
     data = request.get_json()
     user_id = data.get('user_id')
     activity_id = data.get('activity_id')
+    name = data.get('name')  # Get the name from the request data
 
     if not user_id or not activity_id:
         return jsonify({'message': 'User ID and Activity ID are required'}), 400
@@ -154,15 +156,17 @@ def join_activity():
     if existing_join:
         return jsonify({'message': 'You have already joined the activity'}), 400
 
-    try:
-        join_activity_collection.insert_one({
-            'user_id': user_id,
-            'activity_id': activity_id,
-            'joined_at': datetime.datetime.utcnow()
-        })
-        return jsonify({'message': 'Activity joined successfully'}), 201
-    except Exception as e:
-        return jsonify({'message': 'An error occurred while joining the activity', 'error': str(e)}), 500
+    # Save the join activity with the user's name
+    join_activity_data = {
+        'user_id': user_id,
+        'activity_id': activity_id,
+        'name': name,  # Save the user's name
+        'joined_at': datetime.datetime.utcnow()  # Save the current time as join time
+    }
+
+    join_activity_collection.insert_one(join_activity_data)
+
+    return jsonify({'message': 'You have successfully joined the activity'}), 200
 
 @app.route('/api/check_join_status', methods=['POST'])
 def check_join_status():

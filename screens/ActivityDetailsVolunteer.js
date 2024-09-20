@@ -5,10 +5,13 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 const ActivityDetailsVolunteer = () => {
   const route = useRoute();
-  const { activity, userId, name } = route.params || {}; // Get name from params
+  const { activity, userId, name } = route.params || {};
 
-  // Check if the activity is provided
-  if (!activity) {
+  console.log('Activity:', activity);
+  console.log('User ID:', userId);
+  console.log('Name:', name);
+
+  if (!activity || !activity._id) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Activity not found.</Text>
@@ -20,7 +23,8 @@ const ActivityDetailsVolunteer = () => {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
-  const [joinMessage, setJoinMessage] = useState(''); // State for success message
+  const [joinMessage, setJoinMessage] = useState('');
+
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -70,6 +74,8 @@ const ActivityDetailsVolunteer = () => {
         date: new Date().toLocaleDateString(),
         rating,
         activity_id: activity._id,
+        user_id: userId,
+        name,
       };
 
       try {
@@ -104,7 +110,12 @@ const ActivityDetailsVolunteer = () => {
       Alert.alert('Notice', 'You have already joined this activity.');
       return;
     }
-  
+
+    if (!name || name.trim() === '') {
+      Alert.alert('Error', 'Your name is missing. Please try logging in again.');
+      return;
+    }
+
     try {
       const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
         method: 'POST',
@@ -114,15 +125,15 @@ const ActivityDetailsVolunteer = () => {
         body: JSON.stringify({
           user_id: userId,
           activity_id: activity._id,
-          name: name, // Include name in the request body
+          name,
         }),
       });
-  
+
       const result = await response.json();
-  
+
       if (response.ok) {
         setHasJoined(true);
-        setJoinMessage('You have successfully joined the activity!'); // Set the join message
+        setJoinMessage('You have successfully joined the activity!');
       } else {
         Alert.alert('Error', result.message || 'Error joining activity.');
       }
@@ -193,7 +204,7 @@ const ActivityDetailsVolunteer = () => {
             <Text style={styles.joinedText}>You have joined this activity!</Text>
           )}
           {joinMessage && (
-            <Text style={styles.joinedText}>{joinMessage}</Text> // Display join message
+            <Text style={styles.joinedText}>{joinMessage}</Text>
           )}
         </View>
       );
@@ -271,42 +282,52 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
-    elevation: 2,
     marginBottom: 15,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
   },
   location: {
     fontSize: 16,
-    color: '#555',
+    color: '#777',
+    marginBottom: 5,
   },
   date: {
     fontSize: 14,
-    color: '#777',
+    color: '#555',
+    marginBottom: 10,
   },
   description: {
-    fontSize: 14,
-    color: '#333',
-    marginVertical: 10,
-  },
-  joinedText: {
-    fontSize: 14,
-    color: '#28A745',
+    fontSize: 16,
+    color: '#444',
+    marginBottom: 15,
   },
   ratingsSection: {
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
-    elevation: 2,
     marginBottom: 15,
+  },
+  ratingsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  input: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
   reviewsSection: {
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
-    elevation: 2,
     marginBottom: 15,
   },
   reviewsTitle: {
@@ -314,37 +335,38 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
+  reviewsList: {
+    paddingBottom: 10,
+  },
   reviewItem: {
-    padding: 10,
+    marginBottom: 10,
+    borderBottomColor: '#ccc',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    marginBottom: 5,
+    paddingBottom: 5,
   },
   reviewText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
   },
   reviewDate: {
     fontSize: 12,
-    color: '#777',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
+    color: '#999',
   },
   deleteButton: {
-    marginTop: 10,
+    marginTop: 5,
   },
   deleteButtonText: {
-    color: '#FF0000',
+    color: '#e74c3c',
+  },
+  joinedText: {
+    color: '#27ae60',
+    fontWeight: 'bold',
+    marginTop: 10,
   },
   errorText: {
-    color: 'red',
+    fontSize: 20,
+    color: '#e74c3c',
     textAlign: 'center',
-    marginTop: 20,
   },
 });
 

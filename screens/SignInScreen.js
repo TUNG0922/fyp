@@ -14,27 +14,30 @@ const SignInScreen = ({ navigation }) => {
   const handleSignIn = async () => {
     setLoading(true);
     try {
-        const data = await signIn(email, password, role);
-        console.log('Sign-in response:', data); // Check the response structure
+      const data = await signIn(email, password, role);
+      console.log('Sign-in response:', data); // Check the response structure
 
-        if (data && data.message === 'Sign-in successful') {
-            const userId = data.userId; // This should now contain the userId
-            if (userId) {
-                await AsyncStorage.setItem('userId', userId); // Store userId
-                navigation.navigate(`Dashboard${role.replace(' ', '')}`, { userId });
-            } else {
-                Alert.alert('Sign-in Error', 'User ID is missing');
-            }
+      if (data && data.message === 'Sign-in successful') {
+        const userId = data.userId; // This should now contain the userId
+        const username = data.username || 'LOG'; // Use the username or default to 'LOG'
+        if (userId) {
+          await AsyncStorage.setItem('userId', userId); // Store userId
+          await AsyncStorage.setItem('username', username); // Store username
+          await AsyncStorage.setItem('password', password); // Store password
+          navigation.navigate(`Dashboard${role.replace(' ', '')}`, { userId, username, password });
         } else {
-            Alert.alert('Sign-in Error', data.message || 'An unknown error occurred');
+          Alert.alert('Sign-in Error', 'User ID is missing');
         }
+      } else {
+        Alert.alert('Sign-in Error', data.message || 'An unknown error occurred');
+      }
     } catch (error) {
-        console.error('Network request failed:', error);
-        Alert.alert('Network Error', 'Network request failed');
+      console.error('Network request failed:', error);
+      Alert.alert('Network Error', 'Network request failed');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   const handleSignUp = () => {
     navigation.navigate('SignUp');
