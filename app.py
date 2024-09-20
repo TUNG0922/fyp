@@ -77,8 +77,8 @@ def signin():
 
     return jsonify({
         'message': 'Sign-in successful',
-        'userId': str(user['_id']),  # Return the user ID
-        'username': user['name'],     # Return the user's name
+        'userId': str(user['_id']),
+        'username': user['name'],
         'role': user['role']
     }), 200
 
@@ -192,44 +192,29 @@ def check_join_status():
 
 @app.route('/api/add_review', methods=['POST'])
 def add_review():
-    data = request.get_json()
-    text = data.get('text')
-    date = data.get('date')
-    rating = data.get('rating')
-    activity_id = data.get('activity_id')
-
-    if not text or not date or rating is None or not activity_id:
-        return jsonify({'message': 'All fields are required'}), 400
-
-    if not ObjectId.is_valid(activity_id):
-        return jsonify({'message': 'Invalid Activity ID format'}), 400
-
+    data = request.json
+    new_review = {
+        "text": data.get('text'),
+        "date": data.get('date'),
+        "rating": data.get('rating'),
+        "activity_id": data.get('activity_id'),
+        "user_id": data.get('user_id'),  # Save user_id
+        "name": data.get('name'),        # Save name
+    }
+    
+    # Save to MongoDB
     try:
-        reviews_collection.insert_one({
-            'text': text,
-            'date': date,
-            'rating': rating,
-            'activity_id': ObjectId(activity_id)
-        })
-        return jsonify({'message': 'Review added successfully'}), 201
+        result = mongo.db.reviews.insert_one(new_review)
+        return jsonify({"success": True, "review_id": str(result.inserted_id)}), 201
     except Exception as e:
-        return jsonify({'message': 'An error occurred while adding the review', 'error': str(e)}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/api/get_reviews', methods=['GET'])
 def get_reviews():
     activity_id = request.args.get('activityId')
-
-    if not activity_id or not ObjectId.is_valid(activity_id):
-        return jsonify({'message': 'Invalid Activity ID format'}), 400
-
-    try:
-        reviews = list(reviews_collection.find({'activity_id': ObjectId(activity_id)}))
-        for review in reviews:
-            review['_id'] = str(review['_id'])
-            review['activity_id'] = str(review['activity_id'])  # Optional: Convert activity_id to string
-        return jsonify({'reviews': reviews}), 200
-    except Exception as e:
-        return jsonify({'message': 'An error occurred while fetching reviews', 'error': str(e)}), 500
+    reviews = mongo.db.reviews.find({'activity_id': activity_id})  # Adjust based on your schema
+    reviews_list = [{'text': r['text'], 'date': r['date'], 'rating': r['rating'], 'name': r['name'], '_id': str(r['_id'])} for r in reviews]
+    return jsonify({'reviews': reviews_list})
 
 @app.route('/api/delete_review', methods=['POST'])
 def delete_review():
@@ -252,5 +237,5 @@ def delete_review():
     except Exception as e:
         return jsonify({'message': 'An error occurred while deleting the review', 'error': str(e)}), 500
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)

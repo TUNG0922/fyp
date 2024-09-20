@@ -7,10 +7,6 @@ const ActivityDetailsVolunteer = () => {
   const route = useRoute();
   const { activity, userId, name } = route.params || {};
 
-  console.log('Activity:', activity);
-  console.log('User ID:', userId);
-  console.log('Name:', name);
-
   if (!activity || !activity._id) {
     return (
       <View style={styles.container}>
@@ -24,8 +20,6 @@ const ActivityDetailsVolunteer = () => {
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
-
-  const navigation = useNavigation();
 
   useEffect(() => {
     const checkJoinStatus = async () => {
@@ -51,8 +45,10 @@ const ActivityDetailsVolunteer = () => {
 
     const fetchReviews = async () => {
       try {
+        console.log(`Fetching reviews for activity ID: ${activity._id}`);
         const response = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
         const result = await response.json();
+        console.log('Fetch result:', result);
         if (response.ok) {
           setReviews(result.reviews);
         } else {
@@ -174,6 +170,7 @@ const ActivityDetailsVolunteer = () => {
     <View style={styles.reviewItem}>
       <Text style={styles.reviewText}>{item.text}</Text>
       <Text style={styles.reviewDate}>{item.date}</Text>
+      <Text style={styles.reviewAuthor}>{item.name}</Text>
       <AirbnbRating
         size={20}
         isDisabled
@@ -187,64 +184,6 @@ const ActivityDetailsVolunteer = () => {
     </View>
   );
 
-  const renderItem = ({ item }) => {
-    if (item.type === 'image') {
-      return <Image source={{ uri: item.uri }} style={styles.image} />;
-    } else if (item.type === 'details') {
-      return (
-        <View style={styles.details}>
-          <Text style={styles.title}>{activity.name}</Text>
-          <Text style={styles.location}>{activity.location}</Text>
-          <Text style={styles.date}>{activity.date}</Text>
-          <Text style={styles.description}>{activity.description}</Text>
-          {!hasJoined && (
-            <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
-          )}
-          {hasJoined && (
-            <Text style={styles.joinedText}>You have joined this activity!</Text>
-          )}
-          {joinMessage && (
-            <Text style={styles.joinedText}>{joinMessage}</Text>
-          )}
-        </View>
-      );
-    } else if (item.type === 'ratings') {
-      return (
-        <View style={styles.ratingsSection}>
-          <Text style={styles.ratingsTitle}>Rate the Activity</Text>
-          <AirbnbRating
-            size={20}
-            showRating
-            onFinishRating={setRating}
-            ratingCount={5}
-            defaultRating={rating}
-            starContainerStyle={styles.ratingStars}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Write a review..."
-            value={reviewText}
-            onChangeText={setReviewText}
-          />
-          <Button title="Add Review" onPress={handleAddReview} color="#547DBE" />
-        </View>
-      );
-    } else if (item.type === 'reviewsSection') {
-      return (
-        <View style={styles.reviewsSection}>
-          <Text style={styles.reviewsTitle}>Reviews</Text>
-          <FlatList
-            data={reviews}
-            renderItem={renderReview}
-            keyExtractor={(review) => review._id}
-            contentContainerStyle={styles.reviewsList}
-          />
-        </View>
-      );
-    }
-    return null;
-  };
-
   const data = [
     { id: '1', type: 'image', uri: activity.imageUri },
     { id: '2', type: 'details' },
@@ -256,7 +195,62 @@ const ActivityDetailsVolunteer = () => {
     <View style={styles.container}>
       <FlatList
         data={data}
-        renderItem={renderItem}
+        renderItem={({ item }) => {
+          switch (item.type) {
+            case 'image':
+              return <Image source={{ uri: item.uri }} style={styles.image} />;
+            case 'details':
+              return (
+                <View style={styles.details}>
+                  <Text style={styles.title}>{activity.name}</Text>
+                  <Text style={styles.location}>{activity.location}</Text>
+                  <Text style={styles.date}>{activity.date}</Text>
+                  <Text style={styles.description}>{activity.description}</Text>
+                  {!hasJoined && (
+                    <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
+                  )}
+                  {hasJoined && (
+                    <Text style={styles.joinedText}>You have joined this activity!</Text>
+                  )}
+                  {joinMessage && (
+                    <Text style={styles.joinedText}>{joinMessage}</Text>
+                  )}
+                </View>
+              );
+            case 'ratings':
+              return (
+                <View style={styles.ratingsSection}>
+                  <Text style={styles.ratingsTitle}>Add a Review:</Text>
+                  <AirbnbRating
+                    count={5}
+                    reviews={["Terrible", "Bad", "Okay", "Good", "Amazing"]}
+                    size={20}
+                    onFinishRating={(rating) => setRating(rating)}
+                  />
+                  <TextInput
+                    style={styles.reviewInput}
+                    placeholder="Write your review"
+                    value={reviewText}
+                    onChangeText={setReviewText}
+                  />
+                  <Button title="Submit Review" onPress={handleAddReview} />
+                </View>
+              );
+            case 'reviewsSection':
+              return (
+                <View>
+                  <Text style={styles.reviewsTitle}>Reviews:</Text>
+                  <FlatList
+                    data={reviews}
+                    renderItem={renderReview}
+                    keyExtractor={(item) => item._id}
+                  />
+                </View>
+              );
+            default:
+              return null;
+          }
+        }}
         keyExtractor={(item) => item.id}
       />
     </View>
@@ -283,90 +277,84 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     marginBottom: 15,
+    borderColor: '#ddd',
+    borderWidth: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
   },
   location: {
     fontSize: 16,
-    color: '#777',
-    marginBottom: 5,
+    color: '#555',
   },
   date: {
     fontSize: 14,
-    color: '#555',
-    marginBottom: 10,
+    color: '#777',
   },
   description: {
-    fontSize: 16,
-    color: '#444',
-    marginBottom: 15,
+    fontSize: 14,
+    marginTop: 10,
   },
   ratingsSection: {
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
     marginBottom: 15,
+    borderColor: '#ddd',
+    borderWidth: 1,
   },
-  ratingsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-    height: 40,
+  reviewInput: {
+    height: 60,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    borderRadius: 4,
     marginBottom: 10,
-  },
-  reviewsSection: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 15,
+    paddingHorizontal: 10,
   },
   reviewsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  reviewsList: {
-    paddingBottom: 10,
-  },
   reviewItem: {
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 4,
     marginBottom: 10,
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    paddingBottom: 5,
+    borderColor: '#ddd',
+    borderWidth: 1,
   },
   reviewText: {
     fontSize: 16,
-    color: '#333',
   },
   reviewDate: {
     fontSize: 12,
-    color: '#999',
+    color: '#777',
+  },
+  reviewAuthor: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   deleteButton: {
-    marginTop: 5,
+    marginTop: 10,
+    backgroundColor: '#ff4d4d',
+    padding: 5,
+    borderRadius: 4,
+    alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#e74c3c',
-  },
-  joinedText: {
-    color: '#27ae60',
+    color: '#fff',
     fontWeight: 'bold',
-    marginTop: 10,
   },
   errorText: {
-    fontSize: 20,
-    color: '#e74c3c',
+    color: 'red',
     textAlign: 'center',
+    marginTop: 20,
+  },
+  joinedText: {
+    color: 'green',
+    marginTop: 10,
   },
 });
 
