@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, Alert, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signIn } from '../api/auth'; // Import the signIn function
 
 const SignInScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -9,54 +11,30 @@ const SignInScreen = ({ navigation }) => {
   const [role, setRole] = useState('Volunteer');
   const [loading, setLoading] = useState(false);
 
-  // Handle Sign-In
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://10.0.2.2:5000/api/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-          role: role,
-        }),
-      });
+        const data = await signIn(email, password, role);
+        console.log('Sign-in response:', data); // Check the response structure
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
-      const data = await response.json();
-      console.log('Sign-in successful:', data);
-
-      if (data.message === 'Sign-in successful') {
-        // Navigate to the appropriate dashboard based on the role
-        switch (role) {
-          case 'Volunteer':
-            navigation.navigate('DashboardVolunteer');
-            break;
-          case 'Organization Admin':
-            navigation.navigate('DashboardOrganizationAdmin');
-            break;
-          case 'Platform Admin':
-            navigation.navigate('DashboardPlatformAdmin');
-            break;
-          default:
-            Alert.alert('Role Error', 'Invalid role selected');
+        if (data && data.message === 'Sign-in successful') {
+            const userId = data.userId; // This should now contain the userId
+            if (userId) {
+                await AsyncStorage.setItem('userId', userId); // Store userId
+                navigation.navigate(`Dashboard${role.replace(' ', '')}`, { userId });
+            } else {
+                Alert.alert('Sign-in Error', 'User ID is missing');
+            }
+        } else {
+            Alert.alert('Sign-in Error', data.message || 'An unknown error occurred');
         }
-      } else {
-        Alert.alert('Sign-in Error', data.message);
-      }
     } catch (error) {
-      console.error('Network request failed:', error);
-      Alert.alert('Network Error', 'Network request failed');
+        console.error('Network request failed:', error);
+        Alert.alert('Network Error', 'Network request failed');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const handleSignUp = () => {
     navigation.navigate('SignUp');
@@ -64,10 +42,7 @@ const SignInScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Image 
-        source={require('../assets/Community.png')} 
-        style={styles.logo}
-      />
+      <Image source={require('../assets/Community.png')} style={styles.logo} />
       <Text style={styles.heading}>Sign in to your account</Text>
       <Text style={styles.label}>Email</Text>
       <TextInput

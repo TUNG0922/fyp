@@ -1,19 +1,18 @@
-export async function signIn(email, password, role) {
-  try {
-    const response = await fetch('http://localhost:5000/api/signin', {
+export const signIn = async (email, password, role) => {
+  const response = await fetch('http://10.0.2.2:5000/api/signin', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
       },
       body: JSON.stringify({ email, password, role }),
-    });
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error:', error);
-    return { message: 'Sign-in failed' };
+  });
+
+  if (!response.ok) {
+      throw new Error('Sign-in failed');
   }
-}
+
+  return await response.json();
+};
 
 // api/auth.js
 export const signUp = async (name, email, password, role) => {

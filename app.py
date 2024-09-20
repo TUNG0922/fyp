@@ -75,7 +75,11 @@ def signin():
     if user['role'] != role:
         return jsonify({'message': 'Role mismatch'}), 403
 
-    return jsonify({'message': 'Sign-in successful', 'role': user['role']}), 200
+    return jsonify({
+        'message': 'Sign-in successful',
+        'userId': str(user['_id']),  # Return the user ID
+        'role': user['role']
+    }), 200
 
 @app.route('/api/add_activity', methods=['POST'])
 def add_activity():

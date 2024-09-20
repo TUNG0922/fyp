@@ -1,20 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-const ActivityDetailsVolunteer = ({ route }) => {
-  const { activity } = route.params;
+const ActivityDetailsVolunteer = () => {
+  const route = useRoute();
+  const { activity, userId, name } = route.params || {}; // Get name from params
+
+  // Check if the activity is provided
+  if (!activity) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Activity not found.</Text>
+      </View>
+    );
+  }
+
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
+  const [joinMessage, setJoinMessage] = useState(''); // State for success message
   const navigation = useNavigation();
 
   useEffect(() => {
     const checkJoinStatus = async () => {
       try {
-        const userId = '66e0681ef929b768de1a3392'; // Replace with actual user ID
         const response = await fetch('http://10.0.2.2:5000/api/check_join_status', {
           method: 'POST',
           headers: {
@@ -27,7 +38,7 @@ const ActivityDetailsVolunteer = ({ route }) => {
         if (response.ok) {
           setHasJoined(result.hasJoined);
         } else {
-          Alert.alert('Error', result.message || 'An error occurred while checking join status.');
+          Alert.alert('Error', result.message || 'Error checking join status.');
         }
       } catch (error) {
         Alert.alert('Error', 'Network error. Please try again later.');
@@ -41,7 +52,7 @@ const ActivityDetailsVolunteer = ({ route }) => {
         if (response.ok) {
           setReviews(result.reviews);
         } else {
-          Alert.alert('Error', result.message || 'An error occurred while fetching reviews.');
+          Alert.alert('Error', result.message || 'Error fetching reviews.');
         }
       } catch (error) {
         Alert.alert('Error', 'Network error. Please try again later.');
@@ -50,7 +61,7 @@ const ActivityDetailsVolunteer = ({ route }) => {
 
     fetchReviews();
     checkJoinStatus();
-  }, [activity._id]);
+  }, [activity._id, userId]);
 
   const handleAddReview = async () => {
     if (reviewText.trim()) {
@@ -78,7 +89,7 @@ const ActivityDetailsVolunteer = ({ route }) => {
           setRating(0);
           Alert.alert('Success', 'Review added successfully!');
         } else {
-          Alert.alert('Error', result.message || 'An error occurred while adding the review.');
+          Alert.alert('Error', result.message || 'Error adding review.');
         }
       } catch (error) {
         Alert.alert('Error', 'Network error. Please try again later.');
@@ -93,11 +104,8 @@ const ActivityDetailsVolunteer = ({ route }) => {
       Alert.alert('Notice', 'You have already joined this activity.');
       return;
     }
-
+  
     try {
-      const userId = '66e0681ef929b768de1a3392'; // Replace with actual user ID
-      const activityId = activity._id;
-
       const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
         method: 'POST',
         headers: {
@@ -105,17 +113,18 @@ const ActivityDetailsVolunteer = ({ route }) => {
         },
         body: JSON.stringify({
           user_id: userId,
-          activity_id: activityId,
+          activity_id: activity._id,
+          name: name, // Include name in the request body
         }),
       });
-
+  
       const result = await response.json();
-
+  
       if (response.ok) {
         setHasJoined(true);
-        navigation.navigate('NotificationVolunteer', { activity: activity });
+        setJoinMessage('You have successfully joined the activity!'); // Set the join message
       } else {
-        Alert.alert('Error', result.message || 'An error occurred while joining the activity.');
+        Alert.alert('Error', result.message || 'Error joining activity.');
       }
     } catch (error) {
       Alert.alert('Error', 'Network error. Please try again later.');
@@ -125,13 +134,6 @@ const ActivityDetailsVolunteer = ({ route }) => {
   const handleDeleteReview = async (id) => {
     if (!id) {
       Alert.alert('Error', 'Review ID is missing.');
-      return;
-    }
-
-    const isValidId = /^[0-9a-fA-F]{24}$/.test(id);
-
-    if (!isValidId) {
-      Alert.alert('Error', 'Invalid review ID format.');
       return;
     }
 
@@ -150,7 +152,7 @@ const ActivityDetailsVolunteer = ({ route }) => {
         setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));
         Alert.alert('Success', 'Review deleted successfully!');
       } else {
-        Alert.alert('Error', result.message || 'An error occurred while deleting the review.');
+        Alert.alert('Error', result.message || 'Error deleting review.');
       }
     } catch (error) {
       Alert.alert('Error', 'Network error. Please try again later.');
@@ -180,15 +182,18 @@ const ActivityDetailsVolunteer = ({ route }) => {
     } else if (item.type === 'details') {
       return (
         <View style={styles.details}>
-          <Text style={styles.title}>{item.name}</Text>
-          <Text style={styles.location}>{item.location}</Text>
-          <Text style={styles.date}>{item.date}</Text>
-          <Text style={styles.description}>{item.description}</Text>
+          <Text style={styles.title}>{activity.name}</Text>
+          <Text style={styles.location}>{activity.location}</Text>
+          <Text style={styles.date}>{activity.date}</Text>
+          <Text style={styles.description}>{activity.description}</Text>
           {!hasJoined && (
             <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
           )}
           {hasJoined && (
             <Text style={styles.joinedText}>You have joined this activity!</Text>
+          )}
+          {joinMessage && (
+            <Text style={styles.joinedText}>{joinMessage}</Text> // Display join message
           )}
         </View>
       );
@@ -231,7 +236,7 @@ const ActivityDetailsVolunteer = ({ route }) => {
 
   const data = [
     { id: '1', type: 'image', uri: activity.imageUri },
-    { id: '2', type: 'details', name: activity.name, location: activity.location, date: activity.date, description: activity.description },
+    { id: '2', type: 'details' },
     { id: '3', type: 'ratings' },
     { id: '4', type: 'reviewsSection' },
   ];
@@ -270,93 +275,76 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 8,
   },
   location: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#555',
-    marginBottom: 5,
   },
   date: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#777',
-    marginBottom: 10,
   },
   description: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#333',
-    marginBottom: 15,
-  },
-  ratingsSection: {
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 15,
-    elevation: 2,
-  },
-  ratingsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  ratingStars: {
     marginVertical: 10,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 10,
+  joinedText: {
+    fontSize: 14,
+    color: '#28A745',
   },
-  reviewsSection: {
-    marginTop: 20,
+  ratingsSection: {
+    padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 15,
     elevation: 2,
+    marginBottom: 15,
+  },
+  reviewsSection: {
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 2,
+    marginBottom: 15,
   },
   reviewsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  reviewsList: {
-    paddingBottom: 20,
-  },
   reviewItem: {
-    padding: 15,
+    padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   reviewText: {
-    fontSize: 16,
-    marginBottom: 5,
+    fontSize: 14,
+    color: '#333',
   },
   reviewDate: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#777',
-    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
   deleteButton: {
     marginTop: 10,
-    padding: 10,
-    backgroundColor: '#f44336',
-    borderRadius: 8,
-    alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: '#FF0000',
   },
-  joinedText: {
-    fontSize: 16,
-    color: '#00BFAE',
-    marginTop: 10,
-    fontWeight: 'bold',
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });
 
