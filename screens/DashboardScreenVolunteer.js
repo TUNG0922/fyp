@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, FlatList, StyleSheet, Button, ActivityIndicator, Image } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Button, ActivityIndicator, Image, Share } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -27,7 +27,7 @@ const DiscoverScreen = ({ username, userId }) => {
       try {
         const response = await fetch('http://10.0.2.2:5000/api/activities');
         const data = await response.json();
-        console.log('Fetched activities:', data); // Log the fetched data
+        console.log('Fetched activities:', data);
         setActivities(data);
       } catch (error) {
         console.error('Error fetching activities:', error);
@@ -37,6 +37,16 @@ const DiscoverScreen = ({ username, userId }) => {
     };
     fetchActivities();
   }, []);
+
+  const handleShare = async (activity) => {
+    try {
+      await Share.share({
+        message: `Check out this activity: ${activity.name}\n${activity.description}\nLocation: ${activity.location}\nDate: ${activity.date}`,
+      });
+    } catch (error) {
+      console.error('Error sharing activity:', error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -49,7 +59,7 @@ const DiscoverScreen = ({ username, userId }) => {
           renderItem={({ item }) => (
             <View style={styles.activityCard}>
               <Image 
-                source={{ uri: item.imageUri }} // Ensure this is the correct field for the image
+                source={{ uri: item.imageUri }} 
                 style={styles.activityImage}
                 onError={() => console.log('Error loading image:', item.imageUri)}
                 resizeMode="cover"
@@ -65,6 +75,11 @@ const DiscoverScreen = ({ username, userId }) => {
                   userId: userId,
                   name: username,
                 })}
+              />
+              <Button
+                title="Share"
+                onPress={() => handleShare(item)}
+                color="#00BFAE"
               />
             </View>
           )}
