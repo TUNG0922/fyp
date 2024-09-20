@@ -5,14 +5,21 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
 
 // HomeScreen component
-const HomeScreen = () => (
-  <View style={styles.screenContainer}>
-    {/* Add any content or components for the HomeScreen here */}
-  </View>
-);
+const HomeScreen = ({ route }) => {
+  const { username, userId } = route.params;
+
+  return (
+    <View style={styles.screenContainer}>
+      <Text style={styles.screenText}>Welcome, {username}!</Text>
+      <Text style={styles.screenText}>Your User ID: {userId}</Text>
+      {/* Add any additional content or components for the HomeScreen here */}
+    </View>
+  );
+};
 
 // DiscoverScreen component with form functionality
-const DiscoverScreen = ({ navigation }) => {
+const DiscoverScreen = ({ route, navigation }) => {
+  const { username, userId } = route.params;
   const [isFormVisible, setFormVisible] = useState(false);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -20,6 +27,9 @@ const DiscoverScreen = ({ navigation }) => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [activities, setActivities] = useState([]);
+  // Now you can use username and userId in your DiscoverScreen
+  console.log('Username:', username);
+  console.log('User ID:', userId);
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -190,7 +200,9 @@ const DiscoverScreen = ({ navigation }) => {
 };
 
 // ProfileScreen component with Logout button
-const ProfileScreen = ({ navigation }) => {
+const ProfileScreen = ({ route, navigation }) => {
+  const { username, userId, password, email, role } = route.params;
+
   const handleLogout = () => {
     // Implement your logout logic here
     // For example, clearing user session or navigating to the login screen
@@ -199,7 +211,11 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.screenContainer}>
-      {/* Add any content or components for the ProfileScreen here */}
+      <Text style={styles.screenText}>Name: {username}</Text>
+      <Text style={styles.screenText}>User ID: {userId}</Text>
+      <Text style={styles.screenText}>Email: {email}</Text>
+      <Text style={styles.screenText}>Role: {role}</Text>
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
       </TouchableOpacity>
@@ -209,7 +225,9 @@ const ProfileScreen = ({ navigation }) => {
 
 const Tab = createBottomTabNavigator();
 
-const DashboardScreenOrganizationAdmin = () => {
+const DashboardScreenOrganizationAdmin = ({ route }) => {
+  const { username, userId, password, email, role } = route.params;
+
   return (
     <Tab.Navigator
       initialRouteName="Discover"
@@ -233,9 +251,24 @@ const DashboardScreenOrganizationAdmin = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ headerShown: false }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+        initialParams={{ username, userId }} // Passing username and userId
+      />
+      <Tab.Screen
+        name="Discover"
+        component={DiscoverScreen}
+        options={{ headerShown: false }}
+        initialParams={{ username, userId }} // Passing username and userId to DiscoverScreen
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerShown: false }}
+        initialParams={{ username, userId, password, email, role }} // Passing all params to ProfileScreen
+      />
     </Tab.Navigator>
   );
 };
@@ -249,136 +282,115 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    margin: 20,
+    textAlign: 'center',
+    marginVertical: 20,
   },
   formContainer: {
-    position: 'absolute',
-    bottom: 10,
-    left: 20,
-    right: 20,
-    backgroundColor: '#fff',
     padding: 20,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  formLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 4,
+    margin: 20,
   },
   input: {
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
+    borderRadius: 8,
     marginBottom: 10,
     paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
   },
   textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  imagePickerButton: {
-    backgroundColor: '#547DBE',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  imagePickerText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  selectedImage: {
-    width: '100%',
-    height: 200,
-    marginBottom: 10,
-    borderRadius: 12,
-    resizeMode: 'cover',
+    height: 80,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  cancelButton: {
-    marginLeft: 10,
-    backgroundColor: '#FF6347',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    marginTop: 20,
   },
   addButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
     backgroundColor: '#00BFAE',
     width: 60,
     height: 60,
     borderRadius: 30,
-    alignItems: 'center',
     justifyContent: 'center',
-    elevation: 5,
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+  },
+  imagePickerButton: {
+    backgroundColor: '#00BFAE',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  imagePickerText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  selectedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 10,
   },
   activityItem: {
-    flexDirection: 'row',
-    padding: 10,
-    marginVertical: 5,
     backgroundColor: '#fff',
+    padding: 10,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    marginVertical: 5,
     elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   activityImage: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     borderRadius: 8,
+    marginRight: 10,
   },
   activityDetails: {
     flex: 1,
-    marginLeft: 10,
   },
   activityName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#333',
   },
   activityLocation: {
     fontSize: 14,
-    color: '#888',
+    color: '#666',
   },
   activityDate: {
     fontSize: 14,
-    color: '#888',
+    color: '#666',
   },
   activityDescription: {
     fontSize: 14,
-    color: '#333',
+    color: '#999',
   },
-  logoutButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#FF6347', // Or any color that fits your design
-    padding: 15,
+  cancelButton: {
+    backgroundColor: '#f44',
+    padding: 10,
     borderRadius: 8,
     alignItems: 'center',
+    marginLeft: 10,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  logoutButton: {
+    backgroundColor: '#f44',
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
   },
   logoutButtonText: {
     color: '#fff',
-    fontSize: 16,
     fontWeight: 'bold',
   },
 });
