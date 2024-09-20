@@ -130,7 +130,6 @@ const DiscoverScreen = ({ route, navigation }) => {
         <Text style={styles.activityName}>{item.name}</Text>
         <Text style={styles.activityLocation}>{item.location}</Text>
         <Text style={styles.activityDate}>{item.date}</Text>
-        <Text style={styles.activityDescription}>{item.description}</Text>
       </View>
     </TouchableOpacity>
   );

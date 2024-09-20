@@ -10,6 +10,8 @@ const ActivityDetailsScreen = ({ route }) => {
   const [replyModalVisible, setReplyModalVisible] = useState(false);
   const [currentReviewId, setCurrentReviewId] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editedActivity, setEditedActivity] = useState({ ...activity });
 
   useEffect(() => {
     fetchReviews();
@@ -63,6 +65,42 @@ const ActivityDetailsScreen = ({ route }) => {
     }
   };
 
+  const handleEditPress = () => {
+    setEditModalVisible(true);
+  };
+
+  const handleEditSubmit = async () => {
+    const activityData = {
+      _id: activity._id,
+      name: editedActivity.name,
+      location: editedActivity.location,
+      date: editedActivity.date,
+      description: editedActivity.description,
+    };
+  
+    console.log('Sending activity data:', activityData); // Log the data being sent
+  
+    try {
+      const response = await fetch(`http://10.0.2.2:5000/api/edit_activity`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activityData),
+      });
+  
+      const data = await response.json(); // Parse the response
+  
+      if (response.ok) {
+        Alert.alert('Success', 'Activity updated successfully');
+        setEditModalVisible(false);
+        fetchReviews(); // Refresh reviews if needed
+      } else {
+        Alert.alert('Error', data.error || 'Failed to update activity');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update activity');
+    }
+  };  
+
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>
       <View style={styles.ratingContainer}>
@@ -95,6 +133,7 @@ const ActivityDetailsScreen = ({ route }) => {
           <Text style={styles.location}>{activity.location}</Text>
           <Text style={styles.date}>{activity.date}</Text>
           <Text style={styles.description}>{activity.description}</Text>
+          <Button title="Edit" onPress={handleEditPress} />
         </View>
       );
     }
@@ -147,6 +186,47 @@ const ActivityDetailsScreen = ({ route }) => {
             <View style={styles.modalButtons}>
               <Button title="Submit Reply" onPress={handleReplySubmit} />
               <Button title="Cancel" onPress={() => setReplyModalVisible(false)} />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={editModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Activity</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Activity Name"
+              value={editedActivity.name}
+              onChangeText={(text) => setEditedActivity({ ...editedActivity, name: text })}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Location"
+              value={editedActivity.location}
+              onChangeText={(text) => setEditedActivity({ ...editedActivity, location: text })}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Date"
+              value={editedActivity.date}
+              onChangeText={(text) => setEditedActivity({ ...editedActivity, date: text })}
+            />
+            <TextInput
+              style={styles.textInput}
+              placeholder="Description"
+              value={editedActivity.description}
+              onChangeText={(text) => setEditedActivity({ ...editedActivity, description: text })}
+            />
+            <View style={styles.modalButtons}>
+              <Button title="Submit Edit" onPress={handleEditSubmit} />
+              <Button title="Cancel" onPress={() => setEditModalVisible(false)} />
             </View>
           </View>
         </View>
@@ -221,36 +301,28 @@ const styles = StyleSheet.create({
   },
   reviewItem: {
     marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    paddingBottom: 10,
   },
   ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 5,
   },
   rating: {
-    alignSelf: 'flex-start',
+    marginRight: 10,
   },
   commentContainer: {
-    marginTop: 5,
+    marginBottom: 10,
   },
   reviewText: {
     fontSize: 16,
-    color: '#333',
   },
   reviewAuthor: {
     fontSize: 14,
-    color: '#888',
-    fontStyle: 'italic',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginVertical: 20,
+    color: '#666',
   },
   emptyText: {
     textAlign: 'center',
-    marginVertical: 20,
+    color: '#999',
   },
   modalContainer: {
     flex: 1,
@@ -263,26 +335,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 8,
-    alignItems: 'center',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   textInput: {
-    width: '100%',
-    height: 100,
-    borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 4,
+    borderColor: '#ccc',
+    borderRadius: 5,
     padding: 10,
     marginBottom: 15,
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });
 

@@ -268,5 +268,31 @@ def update_profile():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
     
+@app.route('/api/edit_activity', methods=['PUT'])
+def edit_activity():
+    data = request.json
+    activity_id = data.get('_id')
+
+    if not activity_id:
+        return jsonify({'error': 'Activity ID is required'}), 400
+
+    updated_data = {
+        'name': data.get('name'),
+        'location': data.get('location'),
+        'date': data.get('date'),
+        'description': data.get('description'),
+    }
+
+    # Attempt to update the activity in the database
+    result = mongo.db.activities.update_one(
+        {'_id': ObjectId(activity_id)},
+        {'$set': updated_data}
+    )
+
+    if result.modified_count > 0:
+        return jsonify({'message': 'Activity updated successfully'}), 200
+    else:
+        return jsonify({'error': 'No changes made or activity not found'}), 400
+    
 if __name__ == '__main__':
     app.run(debug=True)
