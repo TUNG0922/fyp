@@ -6,8 +6,17 @@ from bson.objectid import ObjectId
 import datetime
 
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb://localhost:27017/volunteerlinks"
+
+# Update the MongoDB URI to include your database name
+app.config["MONGO_URI"] = "mongodb+srv://tungjinyou:O1sVhWFc79iEyxSz@cluster0.ufrs5.mongodb.net/volunteerlinks?retryWrites=true&w=majority"
 mongo = PyMongo(app)
+
+# Check connection to MongoDB
+try:
+    mongo.db.command("ping")
+    print("Successfully connected to MongoDB!")
+except Exception as e:
+    print("Failed to connect to MongoDB:", e)
 
 # Enable CORS
 CORS(app)
@@ -235,5 +244,5 @@ def delete_review():
     except Exception as e:
         return jsonify({'message': 'An error occurred while deleting the review', 'error': str(e)}), 500
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
