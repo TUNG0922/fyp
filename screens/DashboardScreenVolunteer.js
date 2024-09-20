@@ -137,6 +137,7 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
       await AsyncStorage.removeItem('userId'); 
       await AsyncStorage.removeItem('username');
       await AsyncStorage.removeItem('password');
+      await AsyncStorage.removeItem('role');
       navigation.navigate('SignIn');
     } catch (error) {
       console.error('Failed to logout:', error);
