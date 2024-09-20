@@ -237,5 +237,36 @@ def delete_review():
     except Exception as e:
         return jsonify({'message': 'An error occurred while deleting the review', 'error': str(e)}), 500
 
+@app.route('/api/update_profile', methods=['PUT'])
+def update_profile():
+    data = request.json
+    user_id = data.get('userId')
+    new_username = data.get('newUsername')
+    new_email = data.get('newEmail')
+    new_password = data.get('newPassword')
+
+    if not user_id:
+        return jsonify({'status': 'error', 'message': 'User ID is required'}), 400
+
+    update_fields = {}
+    if new_username:
+        update_fields['name'] = new_username  # Ensure the key matches your database schema
+    if new_email:
+        update_fields['email'] = new_email
+    if new_password:
+        hashed_password = generate_password_hash(new_password)
+        update_fields['password'] = hashed_password
+
+    try:
+        result = volunteers_collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': update_fields}
+        )
+        if result.matched_count == 0:
+            return jsonify({'status': 'error', 'message': 'User not found'}), 404
+        return jsonify({'status': 'success', 'message': 'Profile updated successfully!'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)

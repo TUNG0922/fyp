@@ -10,6 +10,7 @@ import DashboardScreenOrganizationAdmin from './screens/DashboardScreenOrganizat
 import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer';
 import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; // For ActivityDetailsScreen
 import NotificationVolunteer from './screens/NotificationVolunteer'; // For NotificationVolunteer
+import EditProfileVolunteer from './screens/EditProfileVolunteer'; // Importing the EditProfileVolunteer
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Stack = createStackNavigator();
@@ -112,6 +113,14 @@ export default function App() {
           component={NotificationVolunteer}
           options={{ 
             headerTitle: 'Notifications',
+          }}
+        />
+        <Stack.Screen
+          name="EditProfileVolunteer" // Register the EditProfileVolunteer screen
+          component={EditProfileVolunteer}
+          options={{ 
+            headerTitle: 'Edit Profile',
+            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
       </Stack.Navigator>

@@ -129,7 +129,6 @@ const DiscoverScreen = ({ username, userId }) => {
 
 // ProfileScreen Component with Logout Button
 const ProfileScreen = ({ username, userId, password, email, role }) => {
-  console.log('User Role:', role);
   const navigation = useNavigation();
 
   const handleLogout = async () => {
@@ -146,12 +145,28 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.profileText}>Profile: {username}</Text>
-      <Text style={styles.userInfo}>Email: {email}</Text>
-      <Text style={styles.userInfo}>Role: {role}</Text>
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+      <View style={styles.profileInfoContainer}>
+        <Text style={styles.profileText}>Profile: {username}</Text>
+        <Text style={styles.userInfo}>Email: {email}</Text>
+        <Text style={styles.userInfo}>Role: {role}</Text>
+      </View>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={() => navigation.navigate('EditProfileVolunteer', { userId, username, email, password, role })}
+        >
+          <Text style={styles.buttonText}>Edit Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.button}
+          onPress={() => navigation.navigate('VolunteerHistory')}
+        >
+          <Text style={styles.buttonText}>Volunteer History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -188,7 +203,7 @@ const DashboardScreenVolunteer = ({ route }) => {
       />
       <Tab.Screen 
         name="Profile" 
-        children={() => <ProfileScreen username={username} userId={userId} password={password} email={email} role={role} />} // Pass role here
+        children={() => <ProfileScreen username={username} userId={userId} password={password} email={email} role={role} />} 
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="user" size={20} color={color} />
@@ -203,11 +218,20 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#F5F5F5',
+    justifyContent: 'flex-start',
   },
   placeholderText: {
     fontSize: 20,
     textAlign: 'center',
     marginTop: 50,
+  },
+  profileInfoContainer: {
+    marginBottom: 20,
+  },
+  profileText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
   userInfo: {
     fontSize: 16,
@@ -235,17 +259,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    flexDirection: 'column',
+    marginTop: 20,
   },
   button: {
-    flex: 1,
     padding: 10,
-    marginHorizontal: 5,
     borderRadius: 5,
     backgroundColor: '#547DBE',
     alignItems: 'center',
+    marginBottom: 10,
   },
   shareButton: {
     backgroundColor: '#00BFAE',
@@ -254,16 +276,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  profileText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
   logoutButton: {
     backgroundColor: '#FF3D3D',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+    marginBottom: 16,
   },
   logoutButtonText: {
     color: '#fff',
