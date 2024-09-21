@@ -211,7 +211,6 @@ const ProfileScreen = ({ route, navigation }) => {
   return (
     <View style={styles.screenContainer}>
       <Text style={styles.screenText}>Name: {username}</Text>
-      <Text style={styles.screenText}>User ID: {userId}</Text>
       <Text style={styles.screenText}>Email: {email}</Text>
       <Text style={styles.screenText}>Role: {role}</Text>
 

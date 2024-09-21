@@ -9,13 +9,52 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Create Top Tab Navigator
 const TopTab = createMaterialTopTabNavigator();
 
-// Pending Activities Component
-const PendingActivities = () => {
+const PendingActivities = ({ userId }) => {
+  const [pendingActivities, setPendingActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPendingActivities = async () => {
+      try {
+        const response = await fetch(`http://10.0.2.2:5000/api/pending_activities/${userId}`);
+        const data = await response.json(); // Parse the JSON response
+        setPendingActivities(data); // Set the fetched data to state
+      } catch (error) {
+        console.error('Error fetching pending activities:', error);
+        Alert.alert('Error', 'An error occurred while fetching activities.');
+      } finally {
+        setLoading(false); // Set loading to false after fetching
+      }
+    };
+
+    fetchPendingActivities();
+  }, [userId]);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#547DBE" />;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Pending Activities</Text>
-      {/* Fetch and display pending activities here */}
-    </View>
+    <FlatList
+      data={pendingActivities}
+      keyExtractor={(item) => item.activity_id} // Use activity_id as key
+      renderItem={({ item }) => (
+        <View style={styles.activityCard}>
+          <Image 
+            source={{ uri: item.image }} 
+            style={styles.activityImage}
+            onError={() => console.log('Error loading image:', item.image)}
+            resizeMode="cover"
+          />
+          <Text style={styles.activityName}>{item.activity_name}</Text>
+          <Text>Date: {item.date}</Text>
+          <Text>Location: {item.location}</Text>
+          <Text>Joined By: {item.username}</Text>
+          <Text>Email: {item.email}</Text>
+        </View>
+      )}
+      contentContainerStyle={{ paddingBottom: 20 }}
+    />
   );
 };
 
@@ -51,7 +90,7 @@ const HomeScreen = ({ username, userId }) => {
 };
 
 // DiscoverScreen Component
-const DiscoverScreen = ({ username, userId }) => {
+const DiscoverScreen = ({ username, userId, email }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
@@ -108,6 +147,7 @@ const DiscoverScreen = ({ username, userId }) => {
                     activity: item,
                     userId: userId,
                     name: username,
+                    email: email, // Pass email here
                   })}
                 >
                   <Text style={styles.buttonText}>Details</Text>
@@ -183,7 +223,9 @@ const DashboardScreenVolunteer = ({ route }) => {
         name="Home" 
         children={() => (
           <TopTab.Navigator>
-            <TopTab.Screen name="Pending" component={PendingActivities} />
+            <TopTab.Screen name="Pending">
+              {() => <PendingActivities userId={userId} />}
+            </TopTab.Screen>
             <TopTab.Screen name="Upcoming" component={UpcomingActivities} />
             <TopTab.Screen name="Completed" component={CompletedActivities} />
           </TopTab.Navigator>
@@ -195,7 +237,7 @@ const DashboardScreenVolunteer = ({ route }) => {
       />
       <Tab.Screen 
         name="Discover" 
-        children={() => <DiscoverScreen username={username} userId={userId} />} 
+        children={() => <DiscoverScreen username={username} userId={userId} email={email} />} 
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="search" size={20} color={color} />

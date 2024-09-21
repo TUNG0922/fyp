@@ -22,9 +22,9 @@ const ActivityDetailsScreen = ({ route }) => {
     try {
       const response = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
       const data = await response.json();
-
+  
       if (response.ok) {
-        setReviews(data.reviews);
+        setReviews(data.reviews); // Ensure data.reviews has user_name
       } else {
         setError(data.error || 'Failed to load reviews');
       }
@@ -33,7 +33,7 @@ const ActivityDetailsScreen = ({ route }) => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   const handleReplyPress = (reviewId) => {
     setCurrentReviewId(reviewId);
@@ -101,24 +101,25 @@ const ActivityDetailsScreen = ({ route }) => {
     }
   };  
 
-  const renderReview = ({ item }) => (
-    <View style={styles.reviewItem}>
-      <View style={styles.ratingContainer}>
-        <Rating
-          type='star'
-          startingValue={item.rating}
-          readonly
-          imageSize={20}
-          style={styles.rating}
-        />
-      </View>
-      <View style={styles.commentContainer}>
-        <Text style={styles.reviewText}>{item.text}</Text>
-        <Text style={styles.reviewAuthor}>- {item.user_name}</Text>
-      </View>
-      <Button title="Reply" onPress={() => handleReplyPress(item._id)} />
+  // Render reviews in the FlatList
+const renderReview = ({ item }) => (
+  <View style={styles.reviewItem}>
+    <View style={styles.ratingContainer}>
+      <Rating
+        type='star'
+        startingValue={item.rating}
+        readonly
+        imageSize={20}
+        style={styles.rating}
+      />
     </View>
-  );
+    <View style={styles.commentContainer}>
+      <Text style={styles.reviewText}>{item.text}</Text>
+      <Text style={styles.reviewAuthor}>- {item.user_name}</Text>
+    </View>
+    <Button title="Reply" onPress={() => handleReplyPress(item._id)} />
+  </View>
+);
 
   const renderItem = ({ item }) => {
     if (item.type === 'activity') {

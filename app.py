@@ -35,7 +35,7 @@ def signup():
     password = data.get('password')
     role = data.get('role')
 
-    if not name or not email or not password or not role:
+    if not all([name, email, password, role]):
         return jsonify({'message': 'All fields are required'}), 400
 
     if volunteers_collection.find_one({'email': email}):
@@ -61,7 +61,7 @@ def signin():
     password = data.get('password')
     role = data.get('role')
 
-    if not email or not password or not role:
+    if not all([email, password, role]):
         return jsonify({'message': 'Email, password, and role are required'}), 400
 
     user = volunteers_collection.find_one({'email': email})
@@ -91,7 +91,7 @@ def add_activity():
     description = data.get('description')
     imageUri = data.get('imageUri')
 
-    if not name or not location or not date or not description:
+    if not all([name, location, date, description, imageUri]):
         return jsonify({'message': 'All fields are required'}), 400
 
     try:
@@ -102,7 +102,7 @@ def add_activity():
             'description': description,
             'imageUri': imageUri
         })
-        return jsonify({"message": "Activity added successfully"}), 200
+        return jsonify({"message": "Activity added successfully"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -135,38 +135,31 @@ def get_activity(activity_id):
 def join_activity():
     data = request.get_json()
     user_id = data.get('user_id')
+    username = data.get('username')
+    email = data.get('email')
     activity_id = data.get('activity_id')
-    name = data.get('name')  # Get the name from the request data
+    activity_name = data.get('activity_name')
+    location = data.get('location')
+    date = data.get('date')
+    image = data.get('image')
 
-    if not user_id or not activity_id:
-        return jsonify({'message': 'User ID and Activity ID are required'}), 400
+    if not all([user_id, username, email, activity_id, activity_name, location, date, image]):
+        return jsonify({'message': 'All fields are required'}), 400
 
-    if not ObjectId.is_valid(user_id) or not ObjectId.is_valid(activity_id):
-        return jsonify({'message': 'Invalid User ID or Activity ID format'}), 400
-
-    user = volunteers_collection.find_one({'_id': ObjectId(user_id)})
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
-
-    activity = activities_collection.find_one({'_id': ObjectId(activity_id)})
-    if not activity:
-        return jsonify({'message': 'Activity not found'}), 404
-
-    existing_join = join_activity_collection.find_one({'user_id': user_id, 'activity_id': activity_id})
-    if existing_join:
-        return jsonify({'message': 'You have already joined the activity'}), 400
-
-    # Save the join activity with the user's name
-    join_activity_data = {
-        'user_id': user_id,
-        'activity_id': activity_id,
-        'name': name,  # Save the user's name
-        'joined_at': datetime.datetime.utcnow()  # Save the current time as join time
-    }
-
-    join_activity_collection.insert_one(join_activity_data)
-
-    return jsonify({'message': 'You have successfully joined the activity'}), 200
+    try:
+        join_activity_collection.insert_one({
+            'user_id': user_id,
+            'username': username,
+            'email': email,
+            'activity_id': activity_id,
+            'activity_name': activity_name,
+            'location': location,
+            'date': date,
+            'image': image,
+        })
+        return jsonify({'message': 'Activity joined successfully!'}), 201
+    except Exception as e:
+        return jsonify({'message': 'Error joining activity', 'error': str(e)}), 500
 
 @app.route('/api/check_join_status', methods=['POST'])
 def check_join_status():
@@ -183,10 +176,7 @@ def check_join_status():
     try:
         join_record = join_activity_collection.find_one({'user_id': user_id, 'activity_id': activity_id})
 
-        if join_record:
-            return jsonify({'hasJoined': True}), 200
-        else:
-            return jsonify({'hasJoined': False}), 200
+        return jsonify({'hasJoined': bool(join_record)}), 200
     except Exception as e:
         return jsonify({'message': 'An error occurred while checking join status', 'error': str(e)}), 500
 
@@ -198,13 +188,15 @@ def add_review():
         "date": data.get('date'),
         "rating": data.get('rating'),
         "activity_id": data.get('activity_id'),
-        "user_id": data.get('user_id'),  # Save user_id
-        "name": data.get('name'),        # Save name
+        "user_id": data.get('user_id'),
+        "name": data.get('name'),
     }
     
-    # Save to MongoDB
+    if not all([new_review["text"], new_review["date"], new_review["rating"], new_review["activity_id"], new_review["user_id"], new_review["name"]]):
+        return jsonify({'message': 'All fields are required'}), 400
+
     try:
-        result = mongo.db.reviews.insert_one(new_review)
+        result = reviews_collection.insert_one(new_review)
         return jsonify({"success": True, "review_id": str(result.inserted_id)}), 201
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
@@ -212,9 +204,12 @@ def add_review():
 @app.route('/api/get_reviews', methods=['GET'])
 def get_reviews():
     activity_id = request.args.get('activityId')
-    reviews = mongo.db.reviews.find({'activity_id': activity_id})  # Adjust based on your schema
+    if not activity_id:
+        return jsonify({'message': 'Activity ID is required'}), 400
+
+    reviews = reviews_collection.find({'activity_id': activity_id})
     reviews_list = [{'text': r['text'], 'date': r['date'], 'rating': r['rating'], 'name': r['name'], '_id': str(r['_id'])} for r in reviews]
-    return jsonify({'reviews': reviews_list})
+    return jsonify({'reviews': reviews_list}), 200
 
 @app.route('/api/delete_review', methods=['POST'])
 def delete_review():
@@ -224,7 +219,6 @@ def delete_review():
     if not review_id:
         return jsonify({'message': 'Review ID is required'}), 400
 
-    # Validate ObjectId format
     if not ObjectId.is_valid(review_id):
         return jsonify({'message': 'Invalid Review ID format'}), 400
 
@@ -239,60 +233,38 @@ def delete_review():
 
 @app.route('/api/update_profile', methods=['PUT'])
 def update_profile():
-    data = request.json
-    user_id = data.get('userId')
-    new_username = data.get('newUsername')
-    new_email = data.get('newEmail')
-    new_password = data.get('newPassword')
+    data = request.get_json()
+    user_id = data.get('user_id')
+    name = data.get('name')
+    email = data.get('email')
+    
+    if not user_id or not name or not email:
+        return jsonify({'message': 'User ID, name, and email are required'}), 400
 
-    if not user_id:
-        return jsonify({'status': 'error', 'message': 'User ID is required'}), 400
-
-    update_fields = {}
-    if new_username:
-        update_fields['name'] = new_username  # Ensure the key matches your database schema
-    if new_email:
-        update_fields['email'] = new_email
-    if new_password:
-        hashed_password = generate_password_hash(new_password)
-        update_fields['password'] = hashed_password
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'message': 'Invalid User ID format'}), 400
 
     try:
-        result = volunteers_collection.update_one(
+        volunteers_collection.update_one(
             {'_id': ObjectId(user_id)},
-            {'$set': update_fields}
+            {'$set': {'name': name, 'email': email}}
         )
-        if result.matched_count == 0:
-            return jsonify({'status': 'error', 'message': 'User not found'}), 404
-        return jsonify({'status': 'success', 'message': 'Profile updated successfully!'}), 200
+        return jsonify({'message': 'Profile updated successfully'}), 200
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-    
-@app.route('/api/edit_activity', methods=['PUT'])
-def edit_activity():
-    data = request.json
-    activity_id = data.get('_id')
+        return jsonify({'message': 'An error occurred while updating the profile', 'error': str(e)}), 500
 
-    if not activity_id:
-        return jsonify({'error': 'Activity ID is required'}), 400
+@app.route('/api/pending_activities/<user_id>', methods=['GET'])
+def get_pending_activities(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'message': 'Invalid User ID format'}), 400
 
-    updated_data = {
-        'name': data.get('name'),
-        'location': data.get('location'),
-        'date': data.get('date'),
-        'description': data.get('description'),
-    }
-
-    # Attempt to update the activity in the database
-    result = mongo.db.activities.update_one(
-        {'_id': ObjectId(activity_id)},
-        {'$set': updated_data}
-    )
-
-    if result.modified_count > 0:
-        return jsonify({'message': 'Activity updated successfully'}), 200
-    else:
-        return jsonify({'error': 'No changes made or activity not found'}), 400
+    try:
+        pending_activities = list(join_activity_collection.find({'user_id': user_id}))
+        for activity in pending_activities:
+            activity['_id'] = str(activity['_id'])  # Convert ObjectId to string
+        return jsonify(pending_activities), 200
+    except Exception as e:
+        return jsonify({'message': 'Error fetching pending activities', 'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

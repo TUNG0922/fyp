@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 const ActivityDetailsVolunteer = () => {
   const route = useRoute();
-  const { activity, userId, name } = route.params || {};
+  const { activity, userId, name, email } = route.params || {};
 
   if (!activity || !activity._id) {
     return (
@@ -19,16 +19,13 @@ const ActivityDetailsVolunteer = () => {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
-  const [joinMessage, setJoinMessage] = useState('');
 
   useEffect(() => {
     const checkJoinStatus = async () => {
       try {
         const response = await fetch('http://10.0.2.2:5000/api/check_join_status', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId, activity_id: activity._id }),
         });
 
@@ -38,23 +35,21 @@ const ActivityDetailsVolunteer = () => {
         } else {
           Alert.alert('Error', result.message || 'Error checking join status.');
         }
-      } catch (error) {
+      } catch {
         Alert.alert('Error', 'Network error. Please try again later.');
       }
     };
 
     const fetchReviews = async () => {
       try {
-        console.log(`Fetching reviews for activity ID: ${activity._id}`);
         const response = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
         const result = await response.json();
-        console.log('Fetch result:', result);
         if (response.ok) {
           setReviews(result.reviews);
         } else {
           Alert.alert('Error', result.message || 'Error fetching reviews.');
         }
-      } catch (error) {
+      } catch {
         Alert.alert('Error', 'Network error. Please try again later.');
       }
     };
@@ -77,14 +72,11 @@ const ActivityDetailsVolunteer = () => {
       try {
         const response = await fetch('http://10.0.2.2:5000/api/add_review', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newReview),
         });
 
         const result = await response.json();
-
         if (response.ok) {
           setReviews((prevReviews) => [...prevReviews, newReview]);
           setReviewText('');
@@ -93,7 +85,7 @@ const ActivityDetailsVolunteer = () => {
         } else {
           Alert.alert('Error', result.message || 'Error adding review.');
         }
-      } catch (error) {
+      } catch {
         Alert.alert('Error', 'Network error. Please try again later.');
       }
     } else {
@@ -108,32 +100,39 @@ const ActivityDetailsVolunteer = () => {
     }
 
     if (!name || name.trim() === '') {
-      Alert.alert('Error', 'Your name is missing. Please try logging in again.');
+      Alert.alert('Error', 'Your username is missing. Please log in again.');
       return;
     }
+    if (!email || email.trim() === '') {
+      Alert.alert('Error', 'Your email is missing. Please log in again.');
+      return;
+    }
+
+    const joinData = {
+      user_id: userId,
+      username: name,
+      email,
+      activity_id: activity._id,
+      activity_name: activity.name,
+      location: activity.location,
+      date: activity.date,
+      image: activity.imageUri,
+    };
 
     try {
       const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          activity_id: activity._id,
-          name,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(joinData),
       });
 
       const result = await response.json();
-
       if (response.ok) {
         setHasJoined(true);
-        setJoinMessage('You have successfully joined the activity!');
       } else {
         Alert.alert('Error', result.message || 'Error joining activity.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Network error. Please try again later.');
     }
   };
@@ -147,21 +146,18 @@ const ActivityDetailsVolunteer = () => {
     try {
       const response = await fetch('http://10.0.2.2:5000/api/delete_review', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ review_id: id }),
       });
 
       const result = await response.json();
-
       if (response.ok) {
         setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));
         Alert.alert('Success', 'Review deleted successfully!');
       } else {
         Alert.alert('Error', result.message || 'Error deleting review.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Network error. Please try again later.');
     }
   };
@@ -206,14 +202,10 @@ const ActivityDetailsVolunteer = () => {
                   <Text style={styles.location}>{activity.location}</Text>
                   <Text style={styles.date}>{activity.date}</Text>
                   <Text style={styles.description}>{activity.description}</Text>
-                  {!hasJoined && (
+                  {!hasJoined ? (
                     <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
-                  )}
-                  {hasJoined && (
+                  ) : (
                     <Text style={styles.joinedText}>You have joined this activity!</Text>
-                  )}
-                  {joinMessage && (
-                    <Text style={styles.joinedText}>{joinMessage}</Text>
                   )}
                 </View>
               );
@@ -225,7 +217,7 @@ const ActivityDetailsVolunteer = () => {
                     count={5}
                     reviews={["Terrible", "Bad", "Okay", "Good", "Amazing"]}
                     size={20}
-                    onFinishRating={(rating) => setRating(rating)}
+                    onFinishRating={setRating}
                   />
                   <TextInput
                     style={styles.reviewInput}
@@ -262,99 +254,82 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 15,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
   },
   image: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
+    resizeMode: 'cover',
+    borderRadius: 10,
     marginBottom: 15,
-    borderColor: '#ddd',
-    borderWidth: 1,
-  },
-  details: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 15,
-    borderColor: '#ddd',
-    borderWidth: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 5,
   },
   location: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: 18,
+    marginBottom: 5,
   },
   date: {
-    fontSize: 14,
-    color: '#777',
+    fontSize: 16,
+    marginBottom: 10,
   },
   description: {
-    fontSize: 14,
-    marginTop: 10,
+    fontSize: 16,
+    marginBottom: 15,
+  },
+  details: {
+    marginBottom: 20,
   },
   ratingsSection: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 15,
-    borderColor: '#ddd',
-    borderWidth: 1,
-  },
-  reviewInput: {
-    height: 60,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 4,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    marginBottom: 20,
   },
   reviewsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  reviewInput: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
     marginBottom: 10,
   },
   reviewItem: {
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingBottom: 10,
     marginBottom: 10,
-    borderColor: '#ddd',
-    borderWidth: 1,
   },
   reviewText: {
     fontSize: 16,
   },
   reviewDate: {
-    fontSize: 12,
-    color: '#777',
+    fontSize: 14,
+    color: '#666',
   },
   reviewAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
   },
   deleteButton: {
-    marginTop: 10,
-    backgroundColor: '#ff4d4d',
-    padding: 5,
-    borderRadius: 4,
-    alignItems: 'center',
+    marginTop: 5,
   },
   deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 20,
+    color: '#ff0000',
   },
   joinedText: {
+    fontSize: 16,
     color: 'green',
     marginTop: 10,
+  },
+  errorText: {
+    fontSize: 18,
+    color: 'red',
+    textAlign: 'center',
   },
 });
 
