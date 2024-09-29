@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Share, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Share, TouchableOpacity, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NotificationVolunteer from './NotificationVolunteer'; // Import the Notification component
 
 // Create Top Tab Navigator
 const TopTab = createMaterialTopTabNavigator();
@@ -17,13 +18,13 @@ const PendingActivities = ({ userId }) => {
     const fetchPendingActivities = async () => {
       try {
         const response = await fetch(`http://10.0.2.2:5000/api/pending_activities/${userId}`);
-        const data = await response.json(); // Parse the JSON response
-        setPendingActivities(data); // Set the fetched data to state
+        const data = await response.json();
+        setPendingActivities(data);
       } catch (error) {
         console.error('Error fetching pending activities:', error);
         Alert.alert('Error', 'An error occurred while fetching activities.');
       } finally {
-        setLoading(false); // Set loading to false after fetching
+        setLoading(false);
       }
     };
 
@@ -37,7 +38,7 @@ const PendingActivities = ({ userId }) => {
   return (
     <FlatList
       data={pendingActivities}
-      keyExtractor={(item) => item.activity_id} // Use activity_id as key
+      keyExtractor={(item) => item.activity_id}
       renderItem={({ item }) => (
         <View style={styles.activityCard}>
           <Image 
@@ -78,17 +79,6 @@ const CompletedActivities = () => {
   );
 };
 
-// HomeScreen Component
-const HomeScreen = ({ username, userId }) => {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.placeholderText}>Welcome to the Home Screen!</Text>
-      <Text style={styles.userInfo}>Username: {username}</Text>
-      <Text style={styles.userInfo}>User ID: {userId}</Text>
-    </View>
-  );
-};
-
 // DiscoverScreen Component
 const DiscoverScreen = ({ username, userId, email }) => {
   const [activities, setActivities] = useState([]);
@@ -100,7 +90,6 @@ const DiscoverScreen = ({ username, userId, email }) => {
       try {
         const response = await fetch('http://10.0.2.2:5000/api/activities');
         const data = await response.json();
-        console.log('Fetched activities:', data);
         setActivities(data);
       } catch (error) {
         console.error('Error fetching activities:', error);
@@ -147,7 +136,7 @@ const DiscoverScreen = ({ username, userId, email }) => {
                     activity: item,
                     userId: userId,
                     name: username,
-                    email: email, // Pass email here
+                    email: email,
                   })}
                 >
                   <Text style={styles.buttonText}>Details</Text>
@@ -251,6 +240,14 @@ const DashboardScreenVolunteer = ({ route }) => {
           tabBarIcon: ({ color }) => <Icon name="user" size={20} color={color} />
         }} 
       />
+      <Tab.Screen 
+        name="Notifications" 
+        component={NotificationVolunteer} // Add the Notifications component here
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color }) => <Icon name="bell" size={20} color={color} />
+        }} 
+      />
     </Tab.Navigator>
   );
 };
@@ -258,14 +255,60 @@ const DashboardScreenVolunteer = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
     backgroundColor: '#F5F5F5',
-    justifyContent: 'flex-start',
   },
-  placeholderText: {
-    fontSize: 20,
+  activityCard: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 10,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  activityImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
+  },
+  activityName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 5,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  button: {
+    backgroundColor: '#547DBE',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  shareButton: {
+    backgroundColor: '#FFC107',
+  },
+  buttonText: {
+    color: 'white',
     textAlign: 'center',
-    marginTop: 50,
+  },
+  logoutButton: {
+    backgroundColor: '#D9534F',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  logoutButtonText: {
+    color: 'white',
+    textAlign: 'center',
   },
   profileInfoContainer: {
     marginBottom: 20,
@@ -273,61 +316,9 @@ const styles = StyleSheet.create({
   profileText: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
   },
   userInfo: {
     fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
-  },
-  activityCard: {
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-  },
-  activityImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  activityName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  buttonContainer: {
-    flexDirection: 'column',
-    marginTop: 20,
-  },
-  button: {
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: '#547DBE',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  shareButton: {
-    backgroundColor: '#00BFAE',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  logoutButton: {
-    backgroundColor: '#FF3D3D',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
   },
 });
 

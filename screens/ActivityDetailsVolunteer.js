@@ -129,6 +129,7 @@ const ActivityDetailsVolunteer = () => {
       const result = await response.json();
       if (response.ok) {
         setHasJoined(true);
+        Alert.alert('Success', 'You have joined the activity!');
       } else {
         Alert.alert('Error', result.message || 'Error joining activity.');
       }
@@ -286,11 +287,6 @@ const styles = StyleSheet.create({
   ratingsSection: {
     marginBottom: 20,
   },
-  reviewsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
   reviewInput: {
     borderColor: '#ccc',
     borderWidth: 1,
@@ -298,38 +294,50 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-  reviewItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    paddingBottom: 10,
+  reviewsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 10,
+  },
+  reviewItem: {
+    backgroundColor: '#f9f9f9',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
   },
   reviewText: {
     fontSize: 16,
   },
   reviewDate: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: '#888',
   },
   reviewAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
   },
+  ratingStars: {
+    marginVertical: 5,
+  },
   deleteButton: {
-    marginTop: 5,
+    backgroundColor: '#ff4d4d',
+    borderRadius: 5,
+    padding: 5,
+    alignItems: 'center',
   },
   deleteButtonText: {
-    color: '#ff0000',
+    color: '#fff',
+    fontWeight: 'bold',
   },
   joinedText: {
     fontSize: 16,
-    color: 'green',
+    color: '#28a745',
     marginTop: 10,
   },
   errorText: {
-    fontSize: 18,
     color: 'red',
     textAlign: 'center',
+    marginTop: 20,
   },
 });
 

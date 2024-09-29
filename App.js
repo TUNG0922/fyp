@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import SignInScreen from './screens/SignInScreen';
@@ -11,20 +11,8 @@ import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer';
 import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; // For ActivityDetailsScreen
 import NotificationVolunteer from './screens/NotificationVolunteer'; // For NotificationVolunteer
 import EditProfileVolunteer from './screens/EditProfileVolunteer'; // Importing the EditProfileVolunteer
-import Icon from 'react-native-vector-icons/FontAwesome';
 
 const Stack = createStackNavigator();
-
-function NotificationIcon({ navigation }) {
-  return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('NotificationVolunteer')}
-      style={styles.notificationButton}
-    >
-      <Icon name="bell" size={24} color="#fff" />
-    </TouchableOpacity>
-  );
-}
 
 function LogoTitle() {
   return (
@@ -43,7 +31,7 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="SignIn"
-        screenOptions={({ navigation }) => ({
+        screenOptions={{
           headerStyle: {
             backgroundColor: '#547DBE',
             shadowColor: '#000',
@@ -58,8 +46,7 @@ export default function App() {
             fontWeight: 'bold',
           },
           headerLeft: () => null, // Removes the back button
-          headerRight: () => <NotificationIcon navigation={navigation} />,
-        })}
+        }}
       >
         <Stack.Screen
           name="SignIn"
@@ -129,9 +116,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  notificationButton: {
-    marginRight: 15,
-  },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',

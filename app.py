@@ -235,19 +235,30 @@ def delete_review():
 def update_profile():
     data = request.get_json()
     user_id = data.get('user_id')
-    name = data.get('name')
-    email = data.get('email')
     
-    if not user_id or not name or not email:
-        return jsonify({'message': 'User ID, name, and email are required'}), 400
+    if not user_id:
+        return jsonify({'message': 'User ID is required'}), 400
 
     if not ObjectId.is_valid(user_id):
         return jsonify({'message': 'Invalid User ID format'}), 400
 
+    # Prepare an update dictionary
+    update_data = {}
+    if 'name' in data and data['name']:
+        update_data['name'] = data['name']
+    if 'email' in data and data['email']:
+        update_data['email'] = data['email']
+    if 'password' in data and data['password']:
+        update_data['password'] = data['password']
+
+    # Ensure there is at least one field to update
+    if not update_data:
+        return jsonify({'message': 'No fields to update'}), 400
+
     try:
         volunteers_collection.update_one(
             {'_id': ObjectId(user_id)},
-            {'$set': {'name': name, 'email': email}}
+            {'$set': update_data}
         )
         return jsonify({'message': 'Profile updated successfully'}), 200
     except Exception as e:
@@ -265,6 +276,33 @@ def get_pending_activities(user_id):
         return jsonify(pending_activities), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching pending activities', 'error': str(e)}), 500
+    
+@app.route('/api/joined_activities/<user_id>', methods=['GET'])
+def get_joined_activities(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'message': 'Invalid User ID format'}), 400
+
+    try:
+        joined_activities = list(join_activity_collection.find({'user_id': user_id}))
+        for activity in joined_activities:
+            activity['_id'] = str(activity['_id'])  # Convert ObjectId to string
+        return jsonify(joined_activities), 200
+    except Exception as e:
+        return jsonify({'message': 'Error fetching joined activities', 'error': str(e)}), 500
+
+@app.route('/api/delete_activity/<activity_id>', methods=['DELETE'])
+def delete_activity(activity_id):
+    if not ObjectId.is_valid(activity_id):
+        return jsonify({'message': 'Invalid activity ID format'}), 400
+
+    try:
+        result = activities_collection.delete_one({'_id': ObjectId(activity_id)})
+        if result.deleted_count:
+            return jsonify({'message': 'Activity deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'Activity not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error deleting activity', 'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

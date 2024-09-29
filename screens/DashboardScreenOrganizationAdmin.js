@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, FlatList, Text } from 'react-native';
+import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, FlatList, Text, ScrollView } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,7 +17,6 @@ const HomeScreen = ({ route }) => {
   );
 };
 
-// DiscoverScreen component with form functionality
 const DiscoverScreen = ({ route, navigation }) => {
   const { username, userId } = route.params;
   const [isFormVisible, setFormVisible] = useState(false);
@@ -27,26 +26,24 @@ const DiscoverScreen = ({ route, navigation }) => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [activities, setActivities] = useState([]);
-  // Now you can use username and userId in your DiscoverScreen
-  console.log('Username:', username);
-  console.log('User ID:', userId);
+
+  // Fetch activities from the API
+  const fetchActivities = async () => {
+    try {
+      const response = await fetch('http://10.0.2.2:5000/api/activities');
+      const data = await response.json();
+      if (response.ok) {
+        setActivities(data);
+      } else {
+        Alert.alert('Error', data.error || 'Failed to fetch activities');
+      }
+    } catch (error) {
+      console.error('Fetch activities error:', error);
+      Alert.alert('Error', 'Failed to fetch activities');
+    }
+  };
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const response = await fetch('http://10.0.2.2:5000/api/activities');
-        const data = await response.json();
-        if (response.ok) {
-          setActivities(data);
-        } else {
-          Alert.alert('Error', data.error || 'Failed to fetch activities');
-        }
-      } catch (error) {
-        console.error('Fetch activities error:', error);
-        Alert.alert('Error', 'Failed to fetch activities');
-      }
-    };
-
     fetchActivities();
   }, []);
 
@@ -89,7 +86,6 @@ const DiscoverScreen = ({ route, navigation }) => {
 
   const handleSubmit = async () => {
     try {
-      console.log('Submitting data:', { name, location, date, description, imageUri });
       const response = await fetch('http://10.0.2.2:5000/api/add_activity', {
         method: 'POST',
         headers: {
@@ -105,8 +101,6 @@ const DiscoverScreen = ({ route, navigation }) => {
       });
 
       const data = await response.json();
-      console.log('Response:', data);
-
       if (response.ok) {
         Alert.alert('Success', 'Activity added successfully');
         handleCancelButtonPress();
@@ -120,18 +114,37 @@ const DiscoverScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      const response = await fetch(`http://10.0.2.2:5000/api/delete_activity/${id}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert('Success', 'Activity deleted successfully');
+        fetchActivities(); // Refresh the activity list
+      } else {
+        Alert.alert('Error', data.error || 'Failed to delete activity');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      Alert.alert('Error', 'Failed to delete activity');
+    }
+  };
+
   const renderActivityItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.activityItem}
-      onPress={() => navigation.navigate('ActivityDetailsScreen', { activity: item })} // Navigates to ActivityDetailsScreen with activity data
-    >
+    <View style={styles.activityItem}>
       {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.activityImage} />}
       <View style={styles.activityDetails}>
         <Text style={styles.activityName}>{item.name}</Text>
         <Text style={styles.activityLocation}>{item.location}</Text>
         <Text style={styles.activityDate}>{item.date}</Text>
       </View>
-    </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -143,9 +156,8 @@ const DiscoverScreen = ({ route, navigation }) => {
       />
 
       {isFormVisible && (
-        <View style={styles.formContainer}>
+        <ScrollView style={styles.formContainer}>
           {imageUri && <Image source={{ uri: imageUri }} style={styles.selectedImage} />}
-
           <Text style={styles.formLabel}>Activity Name</Text>
           <TextInput
             style={styles.input}
@@ -175,18 +187,17 @@ const DiscoverScreen = ({ route, navigation }) => {
             onChangeText={setDescription}
             multiline
           />
-
           <TouchableOpacity style={styles.imagePickerButton} onPress={handleImagePicker}>
             <Text style={styles.imagePickerText}>Pick an Image</Text>
           </TouchableOpacity>
 
           <View style={styles.buttonContainer}>
-            <Button title="Submit" onPress={handleSubmit} />
+            <Button title="Submit" onPress={handleSubmit} color="#00BFAE" />
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancelButtonPress}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       )}
 
       {!isFormVisible && (
@@ -204,7 +215,6 @@ const ProfileScreen = ({ route, navigation }) => {
 
   const handleLogout = () => {
     // Implement your logout logic here
-    // For example, clearing user session or navigating to the login screen
     navigation.navigate('SignIn'); // Assuming you have a 'LoginScreen' defined in your navigator
   };
 
@@ -259,131 +269,134 @@ const DashboardScreenOrganizationAdmin = ({ route }) => {
         name="Discover"
         component={DiscoverScreen}
         options={{ headerShown: false }}
-        initialParams={{ username, userId }} // Passing username and userId to DiscoverScreen
+        initialParams={{ username, userId }} // Passing username and userId
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{ headerShown: false }}
-        initialParams={{ username, userId, password, email, role }} // Passing all params to ProfileScreen
+        initialParams={{ username, userId, password, email, role }} // Passing profile details
       />
     </Tab.Navigator>
   );
 };
 
+// Define styles for the component
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#f8f8f8',
+    padding: 20,
   },
   screenText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginVertical: 20,
-  },
-  formContainer: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 4,
-    margin: 20,
-  },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  textArea: {
-    height: 80,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  addButton: {
-    backgroundColor: '#00BFAE',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-  },
-  imagePickerButton: {
-    backgroundColor: '#00BFAE',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  imagePickerText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  selectedImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
+    fontSize: 20,
     marginBottom: 10,
   },
   activityItem: {
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 5,
-    elevation: 2,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    marginBottom: 10,
+    elevation: 1,
   },
   activityImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 5,
   },
   activityDetails: {
     flex: 1,
+    marginLeft: 10,
   },
   activityName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   activityLocation: {
     fontSize: 14,
     color: '#666',
   },
   activityDate: {
-    fontSize: 14,
-    color: '#666',
-  },
-  activityDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
   },
-  cancelButton: {
-    backgroundColor: '#f44',
+  deleteButton: {
+    backgroundColor: '#FF4B4B',
+    borderRadius: 5,
+    padding: 5,
+  },
+  deleteButtonText: {
+    color: '#fff',
+  },
+  formContainer: {
+    marginTop: 20,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    padding: 15,
+    elevation: 3,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
     padding: 10,
-    borderRadius: 8,
+    marginBottom: 10,
+  },
+  textArea: {
+    height: 100,
+  },
+  formLabel: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  imagePickerButton: {
+    backgroundColor: '#00BFAE',
+    borderRadius: 5,
+    padding: 10,
     alignItems: 'center',
+    marginBottom: 10,
+  },
+  imagePickerText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: '#00BFAE',
+    borderRadius: 50,
+    padding: 10,
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#FF4B4B',
+    borderRadius: 5,
+    padding: 10,
+    flex: 1,
     marginLeft: 10,
   },
   cancelButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  selectedImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+    borderRadius: 5,
   },
   logoutButton: {
-    backgroundColor: '#f44',
+    backgroundColor: '#FF4B4B',
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 5,
     alignItems: 'center',
     marginTop: 20,
   },
