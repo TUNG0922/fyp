@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const ActivityDetailsVolunteer = () => {
   const route = useRoute();
-  const { activity, userId, name, email } = route.params || {};
+  const { activity, userId, name, email, image } = route.params || {};
 
   if (!activity || !activity._id) {
     return (
@@ -19,43 +19,40 @@ const ActivityDetailsVolunteer = () => {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkJoinStatus = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://10.0.2.2:5000/api/check_join_status', {
+        // Check join status
+        const checkJoinStatusResponse = await fetch('http://10.0.2.2:5000/api/check_join_status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: userId, activity_id: activity._id }),
         });
-
-        const result = await response.json();
-        if (response.ok) {
-          setHasJoined(result.hasJoined);
+        const joinStatusResult = await checkJoinStatusResponse.json();
+        if (checkJoinStatusResponse.ok) {
+          setHasJoined(joinStatusResult.hasJoined);
         } else {
-          Alert.alert('Error', result.message || 'Error checking join status.');
+          Alert.alert('Error', joinStatusResult.message || 'Error checking join status.');
         }
-      } catch {
+
+        // Fetch reviews
+        const fetchReviewsResponse = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
+        const fetchReviewsResult = await fetchReviewsResponse.json();
+        if (fetchReviewsResponse.ok) {
+          setReviews(fetchReviewsResult.reviews);
+        } else {
+          Alert.alert('Error', fetchReviewsResult.message || 'Error fetching reviews.');
+        }
+      } catch (error) {
         Alert.alert('Error', 'Network error. Please try again later.');
+      } finally {
+        setLoading(false);
       }
     };
 
-    const fetchReviews = async () => {
-      try {
-        const response = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
-        const result = await response.json();
-        if (response.ok) {
-          setReviews(result.reviews);
-        } else {
-          Alert.alert('Error', result.message || 'Error fetching reviews.');
-        }
-      } catch {
-        Alert.alert('Error', 'Network error. Please try again later.');
-      }
-    };
-
-    fetchReviews();
-    checkJoinStatus();
+    fetchData();
   }, [activity._id, userId]);
 
   const handleAddReview = async () => {
@@ -94,47 +91,57 @@ const ActivityDetailsVolunteer = () => {
   };
 
   const handleJoinActivity = async () => {
-    if (hasJoined) {
-      Alert.alert('Notice', 'You have already joined this activity.');
+    // Validate required fields
+    if (!userId || !activity._id || !activity.name || !email || !image) {
+      Alert.alert('Error', 'All required fields must be filled out.');
       return;
     }
 
-    if (!name || name.trim() === '') {
-      Alert.alert('Error', 'Your username is missing. Please log in again.');
-      return;
-    }
-    if (!email || email.trim() === '') {
-      Alert.alert('Error', 'Your email is missing. Please log in again.');
-      return;
-    }
-
-    const joinData = {
+    const joinActivityData = {
       user_id: userId,
       username: name,
-      email,
+      email: email,
       activity_id: activity._id,
       activity_name: activity.name,
       location: activity.location,
       date: activity.date,
-      image: activity.imageUri,
+      image: image,
     };
 
     try {
       const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(joinData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(joinActivityData),
       });
 
-      const result = await response.json();
       if (response.ok) {
-        setHasJoined(true);
-        Alert.alert('Success', 'You have joined the activity!');
+        Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
+
+        // Add a notification for the volunteer
+        const notificationResponse = await fetch('http://10.0.2.2:5000/api/add_notification', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            message: 'Your application is pending, please wait.',
+          }),
+        });
+
+        if (!notificationResponse.ok) {
+          console.error('Failed to add notification');
+        }
       } else {
-        Alert.alert('Error', result.message || 'Error joining activity.');
+        const result = await response.json();
+        Alert.alert('Error', result.message || 'Failed to join the activity.');
       }
-    } catch {
-      Alert.alert('Error', 'Network error. Please try again later.');
+    } catch (error) {
+      console.error('Error joining activity:', error);
+      Alert.alert('Error', 'An error occurred while joining the activity.');
     }
   };
 
@@ -182,11 +189,19 @@ const ActivityDetailsVolunteer = () => {
   );
 
   const data = [
-    { id: '1', type: 'image', uri: activity.imageUri },
+    { id: '1', type: 'image', uri: image || 'default_image_url_here' }, // Default image URL if not received
     { id: '2', type: 'details' },
     { id: '3', type: 'ratings' },
     { id: '4', type: 'reviewsSection' },
   ];
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00BFAE" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -195,7 +210,16 @@ const ActivityDetailsVolunteer = () => {
         renderItem={({ item }) => {
           switch (item.type) {
             case 'image':
-              return <Image source={{ uri: item.uri }} style={styles.image} />;
+              return (
+                <Image 
+                  source={{ uri: item.uri }} 
+                  style={styles.image} 
+                  onError={(error) => {
+                    console.error('Image load error:', error.nativeEvent.error);
+                    Alert.alert('Error', 'Failed to load image.');
+                  }}
+                />
+              );
             case 'details':
               return (
                 <View style={styles.details}>
@@ -222,22 +246,26 @@ const ActivityDetailsVolunteer = () => {
                   />
                   <TextInput
                     style={styles.reviewInput}
-                    placeholder="Write your review"
+                    placeholder="Write your review..."
                     value={reviewText}
                     onChangeText={setReviewText}
                   />
-                  <Button title="Submit Review" onPress={handleAddReview} />
+                  <Button title="Submit Review" onPress={handleAddReview} color="#00BFAE" />
                 </View>
               );
             case 'reviewsSection':
               return (
-                <View>
+                <View style={styles.reviewsSection}>
                   <Text style={styles.reviewsTitle}>Reviews:</Text>
-                  <FlatList
-                    data={reviews}
-                    renderItem={renderReview}
-                    keyExtractor={(item) => item._id}
-                  />
+                  {reviews.length ? (
+                    <FlatList
+                      data={reviews}
+                      renderItem={renderReview}
+                      keyExtractor={item => item._id}
+                    />
+                  ) : (
+                    <Text>No reviews yet.</Text>
+                  )}
                 </View>
               );
             default:
@@ -250,94 +278,98 @@ const ActivityDetailsVolunteer = () => {
   );
 };
 
-// Styles for ActivityDetailsVolunteer
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
+    padding: 20,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   image: {
     width: '100%',
     height: 200,
-    resizeMode: 'cover',
     borderRadius: 10,
-    marginBottom: 15,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  location: {
-    fontSize: 18,
-    marginBottom: 5,
-  },
-  date: {
-    fontSize: 16,
     marginBottom: 10,
-  },
-  description: {
-    fontSize: 16,
-    marginBottom: 15,
   },
   details: {
     marginBottom: 20,
   },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  location: {
+    fontSize: 18,
+    color: '#555',
+  },
+  date: {
+    fontSize: 18,
+    color: '#555',
+  },
+  description: {
+    fontSize: 16,
+    marginVertical: 10,
+  },
+  joinedText: {
+    fontSize: 16,
+    color: 'green',
+  },
   ratingsSection: {
-    marginBottom: 20,
+    marginVertical: 20,
+  },
+  ratingsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   reviewInput: {
-    borderColor: '#ccc',
     borderWidth: 1,
+    borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginBottom: 10,
+    marginVertical: 10,
+  },
+  reviewsSection: {
+    marginTop: 20,
   },
   reviewsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
   },
   reviewItem: {
-    backgroundColor: '#f9f9f9',
-    padding: 10,
     marginBottom: 10,
-    borderRadius: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingBottom: 10,
   },
   reviewText: {
     fontSize: 16,
   },
   reviewDate: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 14,
+    color: '#999',
   },
   reviewAuthor: {
     fontSize: 14,
     fontWeight: 'bold',
   },
-  ratingStars: {
-    marginVertical: 5,
-  },
   deleteButton: {
-    backgroundColor: '#ff4d4d',
+    backgroundColor: '#f44336',
+    padding: 10,
     borderRadius: 5,
-    padding: 5,
     alignItems: 'center',
+    marginTop: 10,
   },
   deleteButtonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
-  joinedText: {
-    fontSize: 16,
-    color: '#28a745',
-    marginTop: 10,
-  },
   errorText: {
     color: 'red',
+    fontSize: 18,
     textAlign: 'center',
-    marginTop: 20,
   },
 });
 

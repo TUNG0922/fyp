@@ -26,6 +26,7 @@ volunteers_collection = mongo.db.volunteers
 activities_collection = mongo.db.activities
 join_activity_collection = mongo.db.join_activity
 reviews_collection = mongo.db.reviews
+notifications_collection = mongo.db.notifications
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -147,6 +148,7 @@ def join_activity():
         return jsonify({'message': 'All fields are required'}), 400
 
     try:
+        # Insert the activity join record
         join_activity_collection.insert_one({
             'user_id': user_id,
             'username': username,
@@ -157,6 +159,16 @@ def join_activity():
             'date': date,
             'image': image,
         })
+
+        # Create a notification for the user
+        notifications_collection.insert_one({
+            'user_id': user_id,
+            'message': f'You have joined the activity "{activity_name}".',
+            'activity_id': activity_id,
+            'activity_name': activity_name,
+            'timestamp': datetime.datetime.now()
+        })
+
         return jsonify({'message': 'Activity joined successfully!'}), 201
     except Exception as e:
         return jsonify({'message': 'Error joining activity', 'error': str(e)}), 500
@@ -304,5 +316,54 @@ def delete_activity(activity_id):
     except Exception as e:
         return jsonify({'message': 'Error deleting activity', 'error': str(e)}), 500
     
+@app.route('/api/pending_notifications/<user_id>', methods=['GET'])
+def get_pending_notifications(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'message': 'Invalid User ID format'}), 400
+
+    try:
+        pending_activities = list(join_activity_collection.find({'user_id': user_id, 'status': 'pending'}))
+        for activity in pending_activities:
+            activity['_id'] = str(activity['_id'])  # Convert ObjectId to string
+        return jsonify(pending_activities), 200
+    except Exception as e:
+        return jsonify({'message': 'Error fetching pending notifications', 'error': str(e)}), 500
+    
+
+@app.route('/api/add_notification', methods=['POST'])
+def add_notification():
+    data = request.json
+    user_id = data.get('user_id')
+    message = data.get('message')
+    activity_id = data.get('activity_id')  # Optional field for activity-related notifications
+    activity_name = data.get('activity_name')  # Optional field for activity-related notifications
+
+    notification = {
+        'user_id': user_id,
+        'message': message,
+        'timestamp': datetime.datetime.now(),
+        'activity_id': activity_id,
+        'activity_name': activity_name,
+    }
+
+    try:
+        notifications_collection.insert_one(notification)  # Insert into MongoDB
+        return jsonify({'status': 'success', 'notification_id': str(notification['_id'])}), 201
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/notifications/<user_id>', methods=['GET'])
+def get_notifications(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'message': 'Invalid User ID format'}), 400
+
+    try:
+        notifications = list(notifications_collection.find({'user_id': user_id}))
+        for notification in notifications:
+            notification['_id'] = str(notification['_id'])  # Convert ObjectId to string
+        return jsonify(notifications), 200
+    except Exception as e:
+        return jsonify({'message': 'Error fetching notifications', 'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

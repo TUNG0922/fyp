@@ -137,6 +137,7 @@ const DiscoverScreen = ({ username, userId, email }) => {
                     userId: userId,
                     name: username,
                     email: email,
+                    image: item.imageUri, // Pass the activity image here
                   })}
                 >
                   <Text style={styles.buttonText}>Details</Text>
@@ -242,7 +243,7 @@ const DashboardScreenVolunteer = ({ route }) => {
       />
       <Tab.Screen 
         name="Notifications" 
-        component={NotificationVolunteer} // Add the Notifications component here
+        children={() => <NotificationVolunteer userId={userId} />} 
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="bell" size={20} color={color} />
