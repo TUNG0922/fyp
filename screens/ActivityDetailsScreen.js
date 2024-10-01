@@ -89,6 +89,8 @@ const ActivityDetailsScreen = ({ route }) => {
   
       const data = await response.json(); // Parse the response
   
+      console.log('Response data:', data); // Log the response data
+  
       if (response.ok) {
         Alert.alert('Success', 'Activity updated successfully');
         setEditModalVisible(false);
@@ -97,9 +99,10 @@ const ActivityDetailsScreen = ({ route }) => {
         Alert.alert('Error', data.error || 'Failed to update activity');
       }
     } catch (error) {
+      console.log('Error:', error); // Log any error from the fetch call
       Alert.alert('Error', 'Failed to update activity');
     }
-  };  
+  };    
 
   // Render reviews in the FlatList
 const renderReview = ({ item }) => (

@@ -458,5 +458,31 @@ def get_activities_by_user(user_id):
     activities = mongo.db.activities.find({"userId": user_id})  # Adjust the query based on your schema
     return jsonify([activity for activity in activities])
 
+@app.route('/api/edit_activity', methods=['PUT'])
+def edit_activity():
+    try:
+        data = request.get_json()
+        activity_id = data.get('_id')
+
+        # Perform validation, check for null fields, etc.
+        if not activity_id:
+            return jsonify({'error': 'Activity ID is required'}), 400
+        
+        # Assuming you're using MongoDB
+        activities_collection.update_one(
+            {'_id': ObjectId(activity_id)},
+            {
+                '$set': {
+                    'name': data['name'],
+                    'location': data['location'],
+                    'date': data['date'],
+                    'description': data['description']
+                }
+            }
+        )
+        return jsonify({'message': 'Activity updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

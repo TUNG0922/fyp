@@ -157,30 +157,31 @@ const ActivityDetailsVolunteer = () => {
     }
 };  
 
-  const handleDeleteReview = async (id) => {
-    if (!id) {
+const handleDeleteReview = async (id) => {
+  console.log('Attempting to delete review with ID:', id); // Log the review ID being passed
+  if (!id) {
       Alert.alert('Error', 'Review ID is missing.');
       return;
-    }
+  }
 
-    try {
+  try {
       const response = await fetch('http://10.0.2.2:5000/api/delete_review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ review_id: id }),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ review_id: id }),
       });
 
       const result = await response.json();
       if (response.ok) {
-        setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));
-        Alert.alert('Success', 'Review deleted successfully!');
+          setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));
+          Alert.alert('Success', 'Review deleted successfully!');
       } else {
-        Alert.alert('Error', result.message || 'Error deleting review.');
+          Alert.alert('Error', result.message || 'Error deleting review.');
       }
-    } catch {
+  } catch {
       Alert.alert('Error', 'Network error. Please try again later.');
-    }
-  };
+  }
+};
 
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>

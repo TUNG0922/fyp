@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, FlatList, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import * as ImagePicker from 'expo-image-picker';
-import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
 import axios from 'axios';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Button, FlatList, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
 
 // HomeScreen component
 const HomeScreen = ({ route }) => {
@@ -93,7 +93,7 @@ const HomeScreen = ({ route }) => {
 };
 
 const DiscoverScreen = ({ route, navigation }) => {
-  const { username, userId } = route.params;
+  const { username, userId } = route.params; // Passed from previous screen
   const [isFormVisible, setFormVisible] = useState(false);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -122,10 +122,7 @@ const DiscoverScreen = ({ route, navigation }) => {
     fetchActivities();
   }, []);
 
-  const handleAddButtonPress = () => {
-    setFormVisible(true);
-  };
-
+  // Handle image picker
   const handleImagePicker = async () => {
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -150,15 +147,7 @@ const DiscoverScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleCancelButtonPress = () => {
-    setFormVisible(false);
-    setName('');
-    setLocation('');
-    setDate('');
-    setDescription('');
-    setImageUri(null);
-  };
-
+  // Handle form submission
   const handleSubmit = async () => {
     try {
       const response = await fetch('http://10.0.2.2:5000/api/add_activity', {
@@ -180,7 +169,7 @@ const DiscoverScreen = ({ route, navigation }) => {
       if (response.ok) {
         Alert.alert('Success', 'Activity added successfully');
         handleCancelButtonPress();
-        fetchActivities();
+        fetchActivities(); // Refresh activities list
       } else {
         Alert.alert('Error', data.error || 'Something went wrong');
       }
@@ -190,6 +179,7 @@ const DiscoverScreen = ({ route, navigation }) => {
     }
   };
 
+  // Delete an activity
   const handleDelete = async (id) => {
     try {
       const response = await fetch(`http://10.0.2.2:5000/api/delete_activity/${id}`, {
@@ -209,18 +199,30 @@ const DiscoverScreen = ({ route, navigation }) => {
     }
   };
 
+  // Navigate to ActivityDetailsScreen on click
+  const handleActivityPress = (activity) => {
+    navigation.navigate('ActivityDetailsScreen', {
+      activity,
+      userId,
+      username
+    });
+  };
+
+  // Render each activity item
   const renderActivityItem = ({ item }) => (
-    <View style={styles.activityItem}>
-      {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.activityImage} />}
-      <View style={styles.activityDetails}>
-        <Text style={styles.activityName}>{item.name}</Text>
-        <Text style={styles.activityLocation}>{item.location}</Text>
-        <Text style={styles.activityDate}>{item.date}</Text>
+    <TouchableOpacity onPress={() => handleActivityPress(item)}>
+      <View style={styles.activityItem}>
+        {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.activityImage} />}
+        <View style={styles.activityDetails}>
+          <Text style={styles.activityName}>{item.name}</Text>
+          <Text style={styles.activityLocation}>{item.location}</Text>
+          <Text style={styles.activityDate}>{item.date}</Text>
+        </View>
+        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
-        <Text style={styles.deleteButtonText}>Delete</Text>
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -269,7 +271,7 @@ const DiscoverScreen = ({ route, navigation }) => {
 
           <View style={styles.buttonContainer}>
             <Button title="Submit" onPress={handleSubmit} color="#00BFAE" />
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancelButtonPress}>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setFormVisible(false)}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -277,7 +279,7 @@ const DiscoverScreen = ({ route, navigation }) => {
       )}
 
       {!isFormVisible && (
-        <TouchableOpacity style={styles.addButton} onPress={handleAddButtonPress}>
+        <TouchableOpacity style={styles.addButton} onPress={() => setFormVisible(true)}>
           <Icon name="plus" size={24} color="#fff" />
         </TouchableOpacity>
       )}
