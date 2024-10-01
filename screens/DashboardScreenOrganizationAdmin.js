@@ -1,19 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, FlatList, Text, ScrollView } from 'react-native';
+import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert, FlatList, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
 import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
+import axios from 'axios';
 
 // HomeScreen component
 const HomeScreen = ({ route }) => {
-  const { username, userId } = route.params;
+  const { userId, userName, userEmail } = route.params; // Destructure userName and userEmail
+  const [joinedActivities, setJoinedActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchJoinedActivities = async () => {
+    try {
+      const response = await axios.get(`http://10.0.2.2:5000/api/joined_activities/${userId}`);
+      const userJoinedActivities = response.data;
+
+      if (userJoinedActivities.length === 0) {
+        Alert.alert('Info', 'No joined activities found for this user.');
+      } else {
+        setJoinedActivities(userJoinedActivities);
+      }
+    } catch (error) {
+      console.error('Fetch activities error:', error);
+      Alert.alert('Error', 'Failed to fetch joined activities. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJoinedActivities();
+  }, []);
+
+  const handleAccept = (activityId) => {
+    // Handle the accept action
+    Alert.alert('Accepted', `You have accepted activity: ${activityId}`);
+    // Implement the logic to accept the activity
+  };
+
+  const handleReject = (activityId) => {
+    // Handle the reject action
+    Alert.alert('Rejected', `You have rejected activity: ${activityId}`);
+    // Implement the logic to reject the activity
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.screenContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenText}>Welcome, {username}!</Text>
-      <Text style={styles.screenText}>Your User ID: {userId}</Text>
-      {/* Add any additional content or components for the HomeScreen here */}
+      <FlatList
+        data={joinedActivities}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <View style={styles.activityItem}>
+            <Image source={{ uri: item.image }} style={styles.activityImage} />
+            <View style={styles.activityDetails}>
+              <Text style={styles.activityName}>{item.activity_name}</Text>
+              <Text style={styles.activityLocation}>{item.location}</Text>
+              <Text style={styles.activityDate}>{item.date}</Text>
+              {/* Display username and email next to the activity */}
+              <Text style={styles.userNameText}>{item.username}</Text>
+              <Text style={styles.userEmailText}>{item.email}</Text>
+            </View>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity 
+                style={[styles.deleteButton, { backgroundColor: '#4CAF50', marginRight: 10 }]} // Green color for Accept
+                onPress={() => handleAccept(item._id)}
+              >
+                <Text style={styles.deleteButtonText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.deleteButton, { backgroundColor: '#FF4B4B' }]} // Red color for Reject
+                onPress={() => handleReject(item._id)}
+              >
+                <Text style={styles.deleteButtonText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={<Text>No activities available for response.</Text>}
+      />
     </View>
   );
 };
@@ -299,52 +373,67 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   screenText: {
-    fontSize: 20,
-    marginBottom: 10,
+    fontSize: 24, // Increase the font size for better visibility
+    fontWeight: 'bold', // Make the header bold
+    marginBottom: 20, // More space below the title
+    textAlign: 'center', // Center the title
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 10,
+    padding: 15, // Increased padding for a more spacious look
     backgroundColor: '#fff',
-    borderRadius: 5,
-    marginBottom: 10,
-    elevation: 1,
+    borderRadius: 10, // More rounded corners
+    marginBottom: 15, // More space between items
+    elevation: 2, // Slightly increased shadow for depth
   },
   activityImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 5,
+    width: 60, // Slightly larger image
+    height: 60,
+    borderRadius: 10, // Match the rounding of activityItem
+    borderColor: '#e1e1e1', // Add border color for contrast
+    borderWidth: 1, // Border width for a clearer separation
   },
   activityDetails: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 15, // Increased margin for spacing
   },
   activityName: {
-    fontSize: 16,
+    fontSize: 18, // Increased font size for visibility
     fontWeight: 'bold',
   },
   activityLocation: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#666',
   },
   activityDate: {
     fontSize: 12,
     color: '#999',
   },
+  userNameText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 5,
+  },
+  userEmailText: {
+    fontSize: 12,
+    color: '#555',
+  },
   deleteButton: {
     backgroundColor: '#FF4B4B',
     borderRadius: 5,
-    padding: 5,
+    paddingVertical: 8, // Consistent padding
+    paddingHorizontal: 10, // Consistent padding
   },
   deleteButtonText: {
     color: '#fff',
+    fontWeight: 'bold',
   },
   formContainer: {
     marginTop: 20,
     backgroundColor: '#fff',
-    borderRadius: 5,
+    borderRadius: 10,
     padding: 15,
     elevation: 3,
   },
@@ -353,10 +442,11 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginBottom: 10,
+    marginBottom: 15, // Increased margin for better spacing
   },
   textArea: {
     height: 100,
+    textAlignVertical: 'top', // Align text to the top of the area
   },
   formLabel: {
     fontWeight: 'bold',
@@ -364,8 +454,8 @@ const styles = StyleSheet.create({
   },
   imagePickerButton: {
     backgroundColor: '#00BFAE',
-    borderRadius: 5,
-    padding: 10,
+    borderRadius: 10,
+    padding: 12,
     alignItems: 'center',
     marginBottom: 10,
   },
@@ -380,6 +470,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 20,
+    elevation: 5, // Add shadow for depth
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -391,7 +482,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     flex: 1,
-    marginLeft: 10,
+    marginHorizontal: 5, // Use horizontal margin for consistent spacing
   },
   cancelButtonText: {
     color: '#fff',
@@ -405,8 +496,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: '#FF4B4B',
-    padding: 10,
-    borderRadius: 5,
+    padding: 12,
+    borderRadius: 10,
     alignItems: 'center',
     marginTop: 20,
   },

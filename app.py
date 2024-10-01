@@ -28,6 +28,7 @@ join_activity_collection = mongo.db.join_activity
 reviews_collection = mongo.db.reviews
 notifications_collection = mongo.db.notifications
 notifications_organizationadmin_collection = mongo.db.notification_organizationadmin  # New collection for organization admin notifications
+print(list(join_activity_collection.find()))  # This should return the documents in the collection
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -190,7 +191,7 @@ def join_activity():
         # Create a notification for the organization admin in the new "notification_organizationadmin" collection
         notifications_organizationadmin_collection.insert_one({
             'user_id': activity_user_id,  # The organization admin's ID
-            'message': f'User "{username}" has joined your activity "{activity_name}".',
+            'message': f'User "{username}" has applied to joined your activity "{activity_name}".',
             'activity_id': activity_id,
             'activity_name': activity_name,
             'activity_user_id': activity_user_id,  # Include the activity userId
@@ -321,15 +322,39 @@ def get_pending_activities(user_id):
     
 @app.route('/api/joined_activities/<user_id>', methods=['GET'])
 def get_joined_activities(user_id):
+    print("Received request for user ID:", user_id)  # Debug line
+
+    # Validate the user ID format
     if not ObjectId.is_valid(user_id):
         return jsonify({'message': 'Invalid User ID format'}), 400
 
     try:
-        joined_activities = list(join_activity_collection.find({'user_id': user_id}))
+        # Query the join_activity collection for the user's activities
+        joined_activities = list(join_activity_collection.find({'activity_user_id': user_id}))
+
+        # Check if there are any joined activities
+        if not joined_activities:
+            return jsonify({'message': 'No joined activities found for this user.'}), 404
+
+        # Prepare the response with activity details including username and email
+        response_data = []
         for activity in joined_activities:
-            activity['_id'] = str(activity['_id'])  # Convert ObjectId to string
-        return jsonify(joined_activities), 200
+            # Convert ObjectId to string for JSON serialization
+            activity['_id'] = str(activity['_id'])
+            response_data.append({
+                'activity_id': activity['_id'],
+                'activity_name': activity.get('activity_name', ''),
+                'location': activity.get('location', ''),
+                'date': activity.get('date', ''),
+                'image': activity.get('image', ''),
+                'username': activity.get('username', ''),  # Add username
+                'email': activity.get('email', '')         # Add email
+            })
+
+        return jsonify(response_data), 200
+
     except Exception as e:
+        print("Error fetching activities:", str(e))  # Debug line
         return jsonify({'message': 'Error fetching joined activities', 'error': str(e)}), 500
 
 @app.route('/api/delete_activity/<activity_id>', methods=['DELETE'])
@@ -428,5 +453,10 @@ def get_notifications_organization_admin(user_id):
         print(f"Error fetching organization admin notifications: {str(e)}")
         return jsonify({'error': 'Failed to fetch notifications'}), 500
     
+@app.route('/api/activities/<user_id>', methods=['GET'])
+def get_activities_by_user(user_id):
+    activities = mongo.db.activities.find({"userId": user_id})  # Adjust the query based on your schema
+    return jsonify([activity for activity in activities])
+
 if __name__ == '__main__':
     app.run(debug=True)
