@@ -3,6 +3,7 @@ import { View, TextInput, Button, StyleSheet, TouchableOpacity, Image, SafeAreaV
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
+import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
 
 // HomeScreen component
 const HomeScreen = ({ route }) => {
@@ -97,6 +98,7 @@ const DiscoverScreen = ({ route, navigation }) => {
           date,
           description,
           imageUri,
+          userId, // Include userId in the body
         }),
       });
 
@@ -248,6 +250,8 @@ const DashboardScreenOrganizationAdmin = ({ route }) => {
             iconName = 'compass';
           } else if (route.name === 'Profile') {
             iconName = 'user';
+          } else if (route.name === 'Notifications') {
+            iconName = 'bell';
           }
           return <Icon name={iconName} size={size} color={color} />;
         },
@@ -276,6 +280,12 @@ const DashboardScreenOrganizationAdmin = ({ route }) => {
         component={ProfileScreen}
         options={{ headerShown: false }}
         initialParams={{ username, userId, password, email, role }} // Passing profile details
+      />
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationOrganizationAdmin}
+        options={{ headerShown: false }}
+        initialParams={{ username, userId }} // Passing username and userId
       />
     </Tab.Navigator>
   );

@@ -27,6 +27,7 @@ activities_collection = mongo.db.activities
 join_activity_collection = mongo.db.join_activity
 reviews_collection = mongo.db.reviews
 notifications_collection = mongo.db.notifications
+notifications_organizationadmin_collection = mongo.db.notification_organizationadmin  # New collection for organization admin notifications
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -91,8 +92,9 @@ def add_activity():
     date = data.get('date')
     description = data.get('description')
     imageUri = data.get('imageUri')
+    user_id = data.get('userId')  # Get user ID from the request
 
-    if not all([name, location, date, description, imageUri]):
+    if not all([name, location, date, description, imageUri, user_id]):
         return jsonify({'message': 'All fields are required'}), 400
 
     try:
@@ -101,7 +103,8 @@ def add_activity():
             'location': location,
             'date': date,
             'description': description,
-            'imageUri': imageUri
+            'imageUri': imageUri,
+            'userId': user_id  # Add user ID to the activity
         })
         return jsonify({"message": "Activity added successfully"}), 201
     except Exception as e:
@@ -135,19 +138,32 @@ def get_activity(activity_id):
 @app.route('/api/join_activity', methods=['POST'])
 def join_activity():
     data = request.get_json()
-    user_id = data.get('user_id')
-    username = data.get('username')
-    email = data.get('email')
-    activity_id = data.get('activity_id')
-    activity_name = data.get('activity_name')
-    location = data.get('location')
-    date = data.get('date')
-    image = data.get('image')
 
-    if not all([user_id, username, email, activity_id, activity_name, location, date, image]):
+    # Extract and validate input data, including activity_user_id
+    required_fields = ['user_id', 'username', 'email', 'activity_id', 'activity_name', 'location', 'date', 'image', 'activity_user_id']
+    if not all(field in data for field in required_fields):
         return jsonify({'message': 'All fields are required'}), 400
 
+    user_id = data['user_id']
+    username = data['username']
+    email = data['email']
+    activity_id = data['activity_id']
+    activity_name = data['activity_name']
+    location = data['location']
+    date = data['date']
+    image = data['image']
+    activity_user_id = data['activity_user_id']  # Extract organization admin ID as activity_user_id
+
     try:
+        # Get the activity to retrieve its organization_admin_id
+        activity = activities_collection.find_one({'_id': ObjectId(activity_id)})
+        if activity is None:
+            return jsonify({'message': 'Activity not found'}), 404
+
+        # Check if the user has already joined this activity
+        if join_activity_collection.find_one({'user_id': user_id, 'activity_id': activity_id}):
+            return jsonify({'message': 'You have already joined this activity.'}), 409
+
         # Insert the activity join record
         join_activity_collection.insert_one({
             'user_id': user_id,
@@ -158,6 +174,7 @@ def join_activity():
             'location': location,
             'date': date,
             'image': image,
+            'activity_user_id': activity_user_id,  # Store the provided activity_user_id
         })
 
         # Create a notification for the user
@@ -166,11 +183,24 @@ def join_activity():
             'message': f'You have joined the activity "{activity_name}".',
             'activity_id': activity_id,
             'activity_name': activity_name,
+            'activity_user_id': activity_user_id,  # Include activity_user_id here
+            'timestamp': datetime.datetime.now()
+        })
+
+        # Create a notification for the organization admin in the new "notification_organizationadmin" collection
+        notifications_organizationadmin_collection.insert_one({
+            'user_id': activity_user_id,  # The organization admin's ID
+            'message': f'User "{username}" has joined your activity "{activity_name}".',
+            'activity_id': activity_id,
+            'activity_name': activity_name,
+            'activity_user_id': activity_user_id,  # Include the activity userId
             'timestamp': datetime.datetime.now()
         })
 
         return jsonify({'message': 'Activity joined successfully!'}), 201
+
     except Exception as e:
+        print(f"Error occurred: {str(e)}")  # Log the error for debugging
         return jsonify({'message': 'Error joining activity', 'error': str(e)}), 500
 
 @app.route('/api/check_join_status', methods=['POST'])
@@ -322,29 +352,47 @@ def get_pending_notifications(user_id):
         return jsonify({'message': 'Invalid User ID format'}), 400
 
     try:
+        # Fetch pending activities for the user
         pending_activities = list(join_activity_collection.find({'user_id': user_id, 'status': 'pending'}))
+        
+        # Prepare a list to hold notifications with activity details
+        notifications = []
         for activity in pending_activities:
             activity['_id'] = str(activity['_id'])  # Convert ObjectId to string
-        return jsonify(pending_activities), 200
+            
+            # Retrieve activity details based on activity ID
+            activity_details = activities_collection.find_one({'_id': ObjectId(activity['activity_id'])})
+            if activity_details:
+                notifications.append({
+                    'message': f'User with ID "{user_id}" has joined the activity "{activity_details["name"]}".',
+                    'activity_id': activity['_id'],  # Include the activity ID here
+                    'timestamp': datetime.datetime.now().isoformat()  # You can customize the timestamp as needed
+                })
+
+        return jsonify(notifications), 200
     except Exception as e:
         return jsonify({'message': 'Error fetching pending notifications', 'error': str(e)}), 500
-    
 
 @app.route('/api/add_notification', methods=['POST'])
 def add_notification():
     data = request.json
     user_id = data.get('user_id')
     message = data.get('message')
-    activity_id = data.get('activity_id')  # Optional field for activity-related notifications
-    activity_name = data.get('activity_name')  # Optional field for activity-related notifications
+    activity_id = data.get('activity_id')
+    activity_name = data.get('activity_name')
 
+    # Ensure activity_id and activity_name are not null
     notification = {
         'user_id': user_id,
         'message': message,
         'timestamp': datetime.datetime.now(),
-        'activity_id': activity_id,
-        'activity_name': activity_name,
     }
+
+    # Add activity details if they are not null
+    if activity_id is not None:
+        notification['activity_id'] = activity_id
+    if activity_name is not None:
+        notification['activity_name'] = activity_name
 
     try:
         notifications_collection.insert_one(notification)  # Insert into MongoDB
@@ -365,5 +413,20 @@ def get_notifications(user_id):
     except Exception as e:
         return jsonify({'message': 'Error fetching notifications', 'error': str(e)}), 500
 
+@app.route('/api/notifications/organization_admin/<user_id>', methods=['GET'])
+def get_notifications_organization_admin(user_id):
+    try:
+        # Retrieve notifications for the organization admin from the 'notification_organizationadmin' collection
+        notifications = list(notifications_organizationadmin_collection.find({'user_id': user_id}))
+        
+        # Convert ObjectId to string for JSON serialization
+        for notification in notifications:
+            notification['_id'] = str(notification['_id'])
+        
+        return jsonify(notifications), 200
+    except Exception as e:
+        print(f"Error fetching organization admin notifications: {str(e)}")
+        return jsonify({'error': 'Failed to fetch notifications'}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)

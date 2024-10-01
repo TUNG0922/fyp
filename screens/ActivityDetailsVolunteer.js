@@ -7,6 +7,14 @@ const ActivityDetailsVolunteer = () => {
   const route = useRoute();
   const { activity, userId, name, email, image } = route.params || {};
 
+  console.log('User ID:', userId);
+  console.log('Activity ID:', activity._id);
+  console.log('Activity Name:', activity.name);
+  console.log('Email:', email);
+  console.log('Image:', image);
+  console.log('Activity User ID:', activity.userId);
+
+
   if (!activity || !activity._id) {
     return (
       <View style={styles.container}>
@@ -91,59 +99,63 @@ const ActivityDetailsVolunteer = () => {
   };
 
   const handleJoinActivity = async () => {
-    // Validate required fields
-    if (!userId || !activity._id || !activity.name || !email || !image) {
-      Alert.alert('Error', 'All required fields must be filled out.');
-      return;
+    // Check for all required fields
+    if (!userId || !activity._id || !activity.name || !email || !image || !activity.userId) {
+        Alert.alert('Error', 'All required fields must be filled out.');
+        return;
     }
 
     const joinActivityData = {
-      user_id: userId,
-      username: name,
-      email: email,
-      activity_id: activity._id,
-      activity_name: activity.name,
-      location: activity.location,
-      date: activity.date,
-      image: image,
+        user_id: userId,
+        username: name,
+        email: email,
+        activity_id: activity._id,
+        activity_name: activity.name,
+        location: activity.location,
+        date: activity.date,
+        image: image,
+        activity_user_id: activity.userId,
     };
 
+    // Log the joinActivityData to check the userId
+    console.log('Joining activity with data:', joinActivityData);
+
     try {
-      const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(joinActivityData),
-      });
-
-      if (response.ok) {
-        Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
-
-        // Add a notification for the volunteer
-        const notificationResponse = await fetch('http://10.0.2.2:5000/api/add_notification', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            message: 'Your application is pending, please wait.',
-          }),
+        const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(joinActivityData),
         });
 
-        if (!notificationResponse.ok) {
-          console.error('Failed to add notification');
+        if (response.ok) {
+            Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
+
+            // Add a notification for the volunteer
+            const notificationResponse = await fetch('http://10.0.2.2:5000/api/add_notification', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    message: 'Your application is pending, please wait.',
+                }),
+            });
+
+            if (!notificationResponse.ok) {
+                console.error('Failed to add notification');
+            }
+        } else {
+            const result = await response.json();
+            Alert.alert('Error', result.message || 'Failed to join the activity.');
         }
-      } else {
-        const result = await response.json();
-        Alert.alert('Error', result.message || 'Failed to join the activity.');
-      }
     } catch (error) {
-      console.error('Error joining activity:', error);
-      Alert.alert('Error', 'An error occurred while joining the activity.');
+        console.error('Error joining activity:', error);
+        Alert.alert('Error', 'An error occurred while joining the activity.');
     }
-  };
+};  
 
   const handleDeleteReview = async (id) => {
     if (!id) {

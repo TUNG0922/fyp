@@ -206,6 +206,7 @@ const Tab = createBottomTabNavigator();
 
 const DashboardScreenVolunteer = ({ route }) => {
   const { userId, username, password, email, role } = route.params;
+  console.log("DashboardScreenVolunteer - userId:", userId);
 
   return (
     <Tab.Navigator>
