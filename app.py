@@ -41,6 +41,16 @@ print(list(join_activity_collection.find()))
 print("Documents in past_activity_collection:")
 print(list(past_activity_collection.find()))
 
+# Find users with plain text passwords and update them to hashed passwords
+for user in volunteers_collection.find():
+    if not user.get("password").startswith("pbkdf2:"):  # Check if password is not hashed
+        hashed_password = generate_password_hash(user["password"])
+        volunteers_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"password": hashed_password}}
+        )
+        print(f"Updated password for user: {user['_id']}")
+
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -78,21 +88,25 @@ def signin():
     if not all([email, password, role]):
         return jsonify({'message': 'Email, password, and role are required'}), 400
 
+    # Query the volunteers collection for the user
     user = volunteers_collection.find_one({'email': email})
 
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    if not check_password_hash(user['password'], password):
+    # Check the password hash
+    if not check_password_hash(user.get('password', ''), password):
         return jsonify({'message': 'Invalid password'}), 401
 
-    if user['role'] != role:
+    # Check the role
+    if user.get('role') != role:
         return jsonify({'message': 'Role mismatch'}), 403
 
+    # Return user information upon successful sign-in
     return jsonify({
         'message': 'Sign-in successful',
         'userId': str(user['_id']),
-        'username': user['name'],
+        'username': user.get('name', 'N/A'),
         'role': user['role']
     }), 200
 
@@ -287,36 +301,32 @@ def delete_review():
 
 @app.route('/api/update_profile', methods=['PUT'])
 def update_profile():
-    data = request.get_json()
+    data = request.json
     user_id = data.get('user_id')
-    
-    if not user_id:
-        return jsonify({'message': 'User ID is required'}), 400
+    new_password = data.get('password')
 
-    if not ObjectId.is_valid(user_id):
-        return jsonify({'message': 'Invalid User ID format'}), 400
-
-    # Prepare an update dictionary
-    update_data = {}
-    if 'name' in data and data['name']:
-        update_data['name'] = data['name']
-    if 'email' in data and data['email']:
-        update_data['email'] = data['email']
-    if 'password' in data and data['password']:
-        update_data['password'] = data['password']
-
-    # Ensure there is at least one field to update
-    if not update_data:
-        return jsonify({'message': 'No fields to update'}), 400
+    if not user_id or not new_password:
+        return jsonify({'message': 'Missing user_id or password'}), 400
 
     try:
-        volunteers_collection.update_one(
-            {'_id': ObjectId(user_id)},
-            {'$set': update_data}
-        )
-        return jsonify({'message': 'Profile updated successfully'}), 200
-    except Exception as e:
-        return jsonify({'message': 'An error occurred while updating the profile', 'error': str(e)}), 500
+        # Convert user_id to ObjectId
+        user_id_obj = ObjectId(user_id)
+    except:
+        return jsonify({'message': 'Invalid user_id format'}), 400
+
+    # Hash the new password before updating
+    hashed_password = generate_password_hash(new_password)
+
+    # Update the password in the database
+    result = volunteers_collection.update_one(
+        {'_id': user_id_obj},
+        {'$set': {'password': hashed_password}}
+    )
+
+    if result.matched_count > 0:
+        return jsonify({'message': 'Password updated successfully'}), 200
+    else:
+        return jsonify({'message': 'User not found'}), 404
 
 @app.route('/api/pending_activities/<user_id>', methods=['GET'])
 def get_pending_activities(user_id):
