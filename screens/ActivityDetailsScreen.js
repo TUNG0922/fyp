@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Alert, FlatList, ActivityIndicator, Button, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Image, Alert, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Rating } from 'react-native-ratings';
 
 const ActivityDetailsScreen = ({ route }) => {
@@ -24,7 +24,7 @@ const ActivityDetailsScreen = ({ route }) => {
       const data = await response.json();
   
       if (response.ok) {
-        setReviews(data.reviews); // Ensure data.reviews has user_name
+        setReviews(data.reviews);
       } else {
         setError(data.error || 'Failed to load reviews');
       }
@@ -78,8 +78,6 @@ const ActivityDetailsScreen = ({ route }) => {
       description: editedActivity.description,
     };
   
-    console.log('Sending activity data:', activityData); // Log the data being sent
-  
     try {
       const response = await fetch(`http://10.0.2.2:5000/api/edit_activity`, {
         method: 'PUT',
@@ -87,42 +85,44 @@ const ActivityDetailsScreen = ({ route }) => {
         body: JSON.stringify(activityData),
       });
   
-      const data = await response.json(); // Parse the response
-  
-      console.log('Response data:', data); // Log the response data
+      const data = await response.json();
   
       if (response.ok) {
         Alert.alert('Success', 'Activity updated successfully');
         setEditModalVisible(false);
-        fetchReviews(); // Refresh reviews if needed
+        fetchReviews();
       } else {
         Alert.alert('Error', data.error || 'Failed to update activity');
       }
     } catch (error) {
-      console.log('Error:', error); // Log any error from the fetch call
       Alert.alert('Error', 'Failed to update activity');
     }
   };    
 
-  // Render reviews in the FlatList
-const renderReview = ({ item }) => (
-  <View style={styles.reviewItem}>
-    <View style={styles.ratingContainer}>
-      <Rating
-        type='star'
-        startingValue={item.rating}
-        readonly
-        imageSize={20}
-        style={styles.rating}
-      />
+  const handleViewListPress = () => {
+    Alert.alert("View List", "This button will show the list of activities.");
+  };
+  
+  const renderReview = ({ item }) => (
+    <View style={styles.reviewItem}>
+      <View style={styles.ratingContainer}>
+        <Rating
+          type='star'
+          startingValue={item.rating}
+          readonly
+          imageSize={20}
+          style={styles.rating}
+        />
+      </View>
+      <View style={styles.commentContainer}>
+        <Text style={styles.reviewText}>{item.text}</Text>
+        <Text style={styles.reviewAuthor}>- {item.user_name}</Text>
+      </View>
+      <TouchableOpacity style={styles.button} onPress={() => handleReplyPress(item._id)}>
+        <Text style={styles.buttonText}>Reply</Text>
+      </TouchableOpacity>
     </View>
-    <View style={styles.commentContainer}>
-      <Text style={styles.reviewText}>{item.text}</Text>
-      <Text style={styles.reviewAuthor}>- {item.user_name}</Text>
-    </View>
-    <Button title="Reply" onPress={() => handleReplyPress(item._id)} />
-  </View>
-);
+  );
 
   const renderItem = ({ item }) => {
     if (item.type === 'activity') {
@@ -137,7 +137,12 @@ const renderReview = ({ item }) => (
           <Text style={styles.location}>{activity.location}</Text>
           <Text style={styles.date}>{activity.date}</Text>
           <Text style={styles.description}>{activity.description}</Text>
-          <Button title="Edit" onPress={handleEditPress} />
+          <TouchableOpacity style={styles.button} onPress={handleEditPress}>
+            <Text style={styles.buttonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleViewListPress}>
+            <Text style={styles.buttonText}>View List</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -188,8 +193,12 @@ const renderReview = ({ item }) => (
               onChangeText={setReplyText}
             />
             <View style={styles.modalButtons}>
-              <Button title="Submit Reply" onPress={handleReplySubmit} />
-              <Button title="Cancel" onPress={() => setReplyModalVisible(false)} />
+              <TouchableOpacity style={styles.button} onPress={handleReplySubmit}>
+                <Text style={styles.buttonText}>Submit Reply</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={() => setReplyModalVisible(false)}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -229,8 +238,12 @@ const renderReview = ({ item }) => (
               onChangeText={(text) => setEditedActivity({ ...editedActivity, description: text })}
             />
             <View style={styles.modalButtons}>
-              <Button title="Submit Edit" onPress={handleEditSubmit} />
-              <Button title="Cancel" onPress={() => setEditModalVisible(false)} />
+              <TouchableOpacity style={styles.button} onPress={handleEditSubmit}>
+                <Text style={styles.buttonText}>Submit Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={() => setEditModalVisible(false)}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -258,45 +271,49 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   detailsContainer: {
-    backgroundColor: '#fff',
     padding: 15,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
     marginBottom: 15,
   },
   name: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 5,
+    color: '#333',
   },
   location: {
-    fontSize: 16,
+    fontSize: 18,
+    marginBottom: 5,
     color: '#666',
-    marginBottom: 10,
   },
   date: {
     fontSize: 16,
-    color: '#888',
     marginBottom: 10,
+    color: '#666',
   },
   description: {
     fontSize: 16,
-    color: '#333',
+    marginBottom: 20,
+    color: '#444',
+  },
+  button: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginVertical: 5,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   reviewContainer: {
-    backgroundColor: '#fff',
     padding: 15,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 15,
+    marginTop: 15,
   },
   reviewTitle: {
     fontSize: 18,
@@ -304,21 +321,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   reviewItem: {
-    marginBottom: 15,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  rating: {
-    marginRight: 10,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    marginBottom: 10,
   },
   commentContainer: {
     marginBottom: 10,
   },
   reviewText: {
     fontSize: 16,
+    marginBottom: 5,
   },
   reviewAuthor: {
     fontSize: 14,
@@ -326,7 +339,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    color: '#999',
+    fontSize: 16,
+    color: '#777',
   },
   modalContainer: {
     flex: 1,
@@ -335,31 +349,38 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
     padding: 20,
-    borderRadius: 8,
+    width: '80%',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   textInput: {
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginBottom: 15,
+    marginVertical: 5,
+    backgroundColor: '#F9F9F9',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  ratingContainer: {
+    marginBottom: 10,
+  },
+  rating: {
+    alignSelf: 'flex-start',
+  },
   errorText: {
     color: 'red',
     textAlign: 'center',
-    marginBottom: 10,
   },
 });
 

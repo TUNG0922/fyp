@@ -28,6 +28,10 @@ join_activity_collection = mongo.db.join_activity
 reviews_collection = mongo.db.reviews
 notifications_collection = mongo.db.notifications
 notifications_organizationadmin_collection = mongo.db.notification_organizationadmin  # New collection for organization admin notifications
+
+# Define the completed_joined_activity collection
+completed_joined_activity_collection = mongo.db.completed_joined_activity  # Add this line
+
 print(list(join_activity_collection.find()))  # This should return the documents in the collection
 
 @app.route('/api/signup', methods=['POST'])
@@ -483,6 +487,49 @@ def edit_activity():
         return jsonify({'message': 'Activity updated successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/accept_activity', methods=['POST'])
+def accept_activity():
+    try:
+        # Log the raw data received for debugging
+        print("Raw data received:", request.data)
+        
+        # Access the JSON payload directly
+        data = request.json  # This is equivalent to request.get_json()
+        print("Parsed JSON data:", data)  # Log the parsed data
 
+        # Retrieve the join_activity_id from the request
+        join_activity_id = data.get("join_activity_id")
+        
+        # Validate join_activity_id presence and format
+        if not join_activity_id:
+            return jsonify({"error": "Activity ID is required"}), 400
+
+        # Attempt to create ObjectId (this will fail if join_activity_id is not valid)
+        try:
+            object_id = ObjectId(join_activity_id)
+        except Exception as e:
+            print("Invalid ObjectId:", e)
+            return jsonify({"error": "Invalid Activity ID format"}), 400
+
+        # Access the join_activity collection and find the document by _id
+        activity = join_activity_collection.find_one({"_id": object_id})
+        
+        if not activity:
+            return jsonify({"error": "Activity not found"}), 404
+
+        # Move activity to the completed collection
+        completed_joined_activity_collection.insert_one(activity)
+
+        # Remove the activity from the join_activity collection
+        join_activity_collection.delete_one({"_id": object_id})
+
+        # Return success response
+        return jsonify({"message": "Activity moved to completed"}), 200
+
+    except Exception as e:
+        print("Error in accept_activity:", e)
+        return jsonify({"error": "An error occurred"}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)

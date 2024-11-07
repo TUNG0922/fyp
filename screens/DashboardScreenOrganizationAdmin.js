@@ -16,7 +16,9 @@ const HomeScreen = ({ route }) => {
     try {
       const response = await axios.get(`http://10.0.2.2:5000/api/joined_activities/${userId}`);
       const userJoinedActivities = response.data;
-
+  
+      console.log("Fetched activities data:", userJoinedActivities);  // Log full data to check structure
+  
       if (userJoinedActivities.length === 0) {
         Alert.alert('Info', 'No joined activities found for this user.');
       } else {
@@ -28,22 +30,48 @@ const HomeScreen = ({ route }) => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   useEffect(() => {
     fetchJoinedActivities();
   }, []);
 
-  const handleAccept = (activityId) => {
-    // Handle the accept action
-    Alert.alert('Accepted', `You have accepted activity: ${activityId}`);
-    // Implement the logic to accept the activity
-  };
+  const handleAccept = async (activityId) => {
+    try {
+      console.log("Sending activityId:", activityId);  // Confirm the ID being sent
+      if (!activityId) {
+        throw new Error("Activity ID is missing");
+      }
+  
+      const response = await axios.post(
+        'http://10.0.2.2:5000/api/accept_activity',
+        { join_activity_id: activityId },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+  
+      if (response.data.message === 'Activity moved to completed') {
+        Alert.alert('Accepted', 'The activity has been accepted successfully!');
+        setJoinedActivities((prevActivities) =>
+          prevActivities.filter((activity) => activity.activity_id !== activityId)  // Update to correct field name
+        );
+      }
+    } catch (error) {
+      console.error('Error accepting activity:', error);
+      Alert.alert('Error', 'Failed to accept the activity. Please try again.');
+    }
+  };  
 
-  const handleReject = (activityId) => {
-    // Handle the reject action
-    Alert.alert('Rejected', `You have rejected activity: ${activityId}`);
-    // Implement the logic to reject the activity
+const handleReject = async (activityId) => {
+    try {
+      const response = await axios.delete(`http://10.0.2.2:5000/api/reject_activity/${activityId}`);
+      if (response.data.message === 'Activity rejected successfully') {
+        Alert.alert('Rejected', 'The activity has been rejected successfully!');
+        setJoinedActivities((prevActivities) => prevActivities.filter((activity) => activity._id !== activityId));
+      }
+    } catch (error) {
+      console.error('Error rejecting activity:', error);
+      Alert.alert('Error', 'Failed to reject the activity. Please try again.');
+    }
   };
 
   if (loading) {
@@ -57,37 +85,42 @@ const HomeScreen = ({ route }) => {
   return (
     <View style={styles.screenContainer}>
       <FlatList
-        data={joinedActivities}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
+      data={joinedActivities}
+      keyExtractor={(item) => item.activity_id?.toString() || Math.random().toString()}
+      renderItem={({ item }) => {
+        console.log("Rendering activity with ID:", item.activity_id);  // Log to confirm field name
+        return (
           <View style={styles.activityItem}>
-            <Image source={{ uri: item.image }} style={styles.activityImage} />
+            <Image 
+              source={{ uri: item.image || 'default_image_url' }}  // Fallback image if undefined
+              style={styles.activityImage} 
+            />
             <View style={styles.activityDetails}>
-              <Text style={styles.activityName}>{item.activity_name}</Text>
-              <Text style={styles.activityLocation}>{item.location}</Text>
-              <Text style={styles.activityDate}>{item.date}</Text>
-              {/* Display username and email next to the activity */}
-              <Text style={styles.userNameText}>{item.username}</Text>
-              <Text style={styles.userEmailText}>{item.email}</Text>
+              <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
+              <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
+              <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+              <Text style={styles.userNameText}>{item.username || 'Unknown User'}</Text>
+              <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
             </View>
             <View style={{ flexDirection: 'row' }}>
               <TouchableOpacity 
-                style={[styles.deleteButton, { backgroundColor: '#4CAF50', marginRight: 10 }]} // Green color for Accept
-                onPress={() => handleAccept(item._id)}
+                style={[styles.button, { backgroundColor: '#4CAF50', marginRight: 10 }]} // Green color for Accept
+                onPress={() => handleAccept(item.activity_id)}  // Use correct ID field
               >
-                <Text style={styles.deleteButtonText}>Accept</Text>
+                <Text style={styles.buttonText}>Accept</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.deleteButton, { backgroundColor: '#FF4B4B' }]} // Red color for Reject
-                onPress={() => handleReject(item._id)}
+                style={[styles.button, { backgroundColor: '#FF4B4B' }]} // Red color for Reject
+                onPress={() => handleReject(item.activity_id)}  // Use correct ID field
               >
-                <Text style={styles.deleteButtonText}>Reject</Text>
+                <Text style={styles.buttonText}>Reject</Text>
               </TouchableOpacity>
             </View>
           </View>
-        )}
-        ListEmptyComponent={<Text>No activities available for response.</Text>}
-      />
+        );
+      }}
+      ListEmptyComponent={<Text>No activities available for response.</Text>}
+    />
     </View>
   );
 };
