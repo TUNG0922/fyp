@@ -2,19 +2,20 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
 const EditProfileVolunteer = ({ route, navigation }) => {
-  const { userId, username, email, password, role } = route.params;
+  const { userId, username, email } = route.params;
 
-  const [newUsername, setNewUsername] = useState(username);
-  const [newEmail, setNewEmail] = useState(email);
-  const [newPassword, setNewPassword] = useState(password);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleSave = async () => {
-    // Prepare the update payload
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
     const updatedData = {
       user_id: userId,
-      ...(newUsername !== username && { name: newUsername }),
-      ...(newEmail !== email && { email: newEmail }),
-      ...(newPassword && { password: newPassword }), // Include password only if it's changed
+      password: newPassword,
     };
 
     try {
@@ -29,42 +30,48 @@ const EditProfileVolunteer = ({ route, navigation }) => {
       const data = await response.json();
 
       if (response.ok) {
-        Alert.alert('Profile updated successfully!');
+        Alert.alert('Success', 'Password updated successfully');
         navigation.goBack();
       } else {
-        Alert.alert('Failed to update profile', data.message);
+        Alert.alert('Error', data.message || 'Failed to update password');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      Alert.alert('Failed to update profile');
+      Alert.alert('Error', 'Failed to update password');
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Edit Profile</Text>
-      <TextInput
-        style={styles.input}
-        value={newUsername}
-        onChangeText={setNewUsername}
-        placeholder="Username"
-      />
-      <TextInput
-        style={styles.input}
-        value={newEmail}
-        onChangeText={setNewEmail}
-        placeholder="Email"
-        keyboardType="email-address"
-      />
+
+      <View style={styles.infoContainer}>
+        <Text style={styles.label}>Username:</Text>
+        <Text style={styles.infoText}>{username}</Text>
+      </View>
+
+      <View style={styles.infoContainer}>
+        <Text style={styles.label}>Email:</Text>
+        <Text style={styles.infoText}>{email}</Text>
+      </View>
+
       <TextInput
         style={styles.input}
         value={newPassword}
         onChangeText={setNewPassword}
-        placeholder="Password"
+        placeholder="New Password"
         secureTextEntry
       />
+      <TextInput
+        style={styles.input}
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        placeholder="Confirm New Password"
+        secureTextEntry
+      />
+
       <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save Changes</Text>
+        <Text style={styles.buttonText}>Save Password</Text>
       </TouchableOpacity>
     </View>
   );
@@ -80,6 +87,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  infoContainer: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 16,
+    color: '#333',
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#555',
   },
   input: {
     height: 40,

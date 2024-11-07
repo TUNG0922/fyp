@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Share, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Share, TouchableOpacity, Alert, Button } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NotificationVolunteer from './NotificationVolunteer'; // Import the Notification component
+import axios from 'axios'; // Ensure axios is imported
 
 // Create Top Tab Navigator
 const TopTab = createMaterialTopTabNavigator();
@@ -36,45 +37,175 @@ const PendingActivities = ({ userId }) => {
   }
 
   return (
-    <FlatList
-      data={pendingActivities}
-      keyExtractor={(item) => item.activity_id}
-      renderItem={({ item }) => (
-        <View style={styles.activityCard}>
-          <Image 
-            source={{ uri: item.image }} 
-            style={styles.activityImage}
-            onError={() => console.log('Error loading image:', item.image)}
-            resizeMode="cover"
-          />
-          <Text style={styles.activityName}>{item.activity_name}</Text>
-          <Text>Date: {item.date}</Text>
-          <Text>Location: {item.location}</Text>
-          <Text>Joined By: {item.username}</Text>
-          <Text>Email: {item.email}</Text>
-        </View>
+    <View style={styles.container}>
+      {pendingActivities.length === 0 ? (
+        <Text style={styles.noActivitiesText}>No pending activities found.</Text>
+      ) : (
+        <FlatList
+          data={pendingActivities}
+          keyExtractor={(item) => item.activity_id}
+          renderItem={({ item }) => (
+            <View style={styles.activityCard}>
+              <Image
+                source={{ uri: item.image }}
+                style={styles.activityImage}
+                onError={() => console.log('Error loading image:', item.image)}
+                resizeMode="cover"
+              />
+              <Text style={styles.activityName}>{item.activity_name}</Text>
+              <Text>Date: {item.date}</Text>
+              <Text>Location: {item.location}</Text>
+              <Text>Joined By: {item.username}</Text>
+              <Text>Email: {item.email}</Text>
+            </View>
+          )}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
       )}
-      contentContainerStyle={{ paddingBottom: 20 }}
-    />
+    </View>
   );
 };
 
 // Upcoming Activities Component
 const UpcomingActivities = () => {
+  // State to store activities
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch upcoming/completed activities
+  const fetchUpcomingActivities = async () => {
+    try {
+      const response = await axios.get('http://10.0.2.2:5000/api/completed_joined_activity');
+      const completedActivities = response.data;
+  
+      console.log("Fetched completed activities:", completedActivities);  // Log to inspect structure
+  
+      if (completedActivities.length > 0) {
+        setActivities(completedActivities);
+      }
+    } catch (error) {
+      console.error('Error fetching completed activities:', error);
+      Alert.alert('Error', 'Failed to fetch completed activities. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle completing an activity (move it to past_activity)
+  const handleComplete = async (activityId) => {
+    try {
+      const response = await axios.post(`http://10.0.2.2:5000/api/complete_activity/${activityId}`);
+
+      if (response.status === 200) {
+        Alert.alert('Success', 'Activity moved to past activities!');
+        fetchUpcomingActivities();  // Refresh the list after completion
+      }
+    } catch (error) {
+      console.error('Error completing activity:', error);
+      Alert.alert('Error', 'Failed to complete the activity. Please try again.');
+    }
+  };
+
+  // Render each activity in the list
+  const renderActivity = ({ item }) => {
+    return (
+      <View style={styles.activityCard}>
+        {item.image_url ? (
+          <Image source={{ uri: item.image_url }} style={styles.activityImage} />
+        ) : (
+          <View style={styles.noImageContainer}>
+            <Text style={styles.noImageText}>No Image Available</Text>
+          </View>
+        )}
+        <View style={styles.activityDetails}>
+          <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
+          <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
+          <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+          <TouchableOpacity 
+            style={styles.completeButton}
+            onPress={() => handleComplete(item._id)}
+          >
+            <Text style={styles.completeButtonText}>Complete</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  useEffect(() => {
+    fetchUpcomingActivities();
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Text>Upcoming Activities</Text>
-      {/* Fetch and display upcoming activities here */}
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <FlatList
+          data={activities}
+          keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
+          renderItem={renderActivity}
+          ListEmptyComponent={<Text>No upcoming activities found.</Text>}
+        />
+      )}
     </View>
   );
 };
 
 // Completed Activities Component
 const CompletedActivities = () => {
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCompletedActivities = async () => {
+    try {
+      const response = await axios.get('http://10.0.2.2:5000/api/past_activities');
+      setActivities(response.data);
+    } catch (error) {
+      console.error('Error fetching completed activities:', error);
+      Alert.alert('Error', 'Failed to fetch completed activities. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompletedActivities();
+  }, []);
+
+  const renderActivity = ({ item }) => (
+    <View style={styles.activityCard}>
+      {item.image ? (
+        <Image 
+          source={{ uri: item.image }} 
+          style={styles.activityImage} 
+          onError={() => console.error('Failed to load image:', item.image)} 
+        />
+      ) : (
+        <View style={styles.noImageContainer}>
+          <Text style={styles.noImageText}>No Image Available</Text>
+        </View>
+      )}
+      <View style={styles.activityDetails}>
+        <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
+        <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
+        <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text>Completed Activities</Text>
-      {/* Fetch and display completed activities here */}
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <FlatList
+          data={activities}
+          keyExtractor={(item) => item._id}
+          renderItem={renderActivity}
+          ListEmptyComponent={<></>}  // No empty message displayed
+        />
+      )}
     </View>
   );
 };
@@ -255,72 +386,117 @@ const DashboardScreenVolunteer = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+  // Container for the entire screen
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F5F5F5', // Light background color
   },
+
+  // Card to display each activity
   activityCard: {
     backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 10,
-    shadowColor: '#000',
+    borderRadius: 15, // Rounded corners
+    padding: 15, // More padding for comfortable spacing
+    marginVertical: 12, // Increased vertical margin for separation
+    shadowColor: '#000', // Subtle shadow effect
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4, // Deeper shadow for more depth
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.1, // Lighter shadow opacity
+    shadowRadius: 5, // Softer shadow radius
+    elevation: 3, // For Android, adjust elevation for shadow
   },
+
+  // Image style for each activity card
   activityImage: {
     width: '100%',
-    height: 150,
-    borderRadius: 10,
+    height: 180, // Taller image
+    borderRadius: 15, // Rounded corners to match card
+    marginBottom: 12, // Space between image and text
+    resizeMode: 'cover', // Ensure the image covers the area correctly
   },
+
+  // Style for activity name
   activityName: {
-    fontSize: 18,
+    fontSize: 20, // Larger font size for name
     fontWeight: 'bold',
-    marginVertical: 5,
+    marginBottom: 5,
+    color: '#333', // Dark color for readability
   },
+
+  // Button container for action buttons
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 15, // Space between text and buttons
   },
+
+  // Style for the buttons
   button: {
-    backgroundColor: '#547DBE',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#547DBE', // Primary button color
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 8, // Rounded corners for buttons
     flex: 1,
     marginHorizontal: 5,
+    alignItems: 'center', // Center button text
   },
+
+  // Specific style for the share button (yellow)
   shareButton: {
-    backgroundColor: '#FFC107',
+    backgroundColor: '#FFC107', // Yellow for the share button
   },
+
+  // Button text style
   buttonText: {
     color: 'white',
+    fontSize: 16, // Slightly larger font for better readability
     textAlign: 'center',
+    fontWeight: 'bold', // Bold button text
   },
+
+  // Logout button style
   logoutButton: {
-    backgroundColor: '#D9534F',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
+    backgroundColor: '#D9534F', // Red for logout button
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 20, // Space between the last button
   },
+
+  // Logout button text
   logoutButtonText: {
     color: 'white',
     textAlign: 'center',
+    fontSize: 16, // Clear text for logout action
   },
+
+  // Profile info container
   profileInfoContainer: {
-    marginBottom: 20,
+    marginBottom: 25, // More space after profile details
   },
+
+  // Profile header text (name or title)
   profileText: {
-    fontSize: 20,
+    fontSize: 22, // Larger size for profile title
     fontWeight: 'bold',
+    marginBottom: 8, // Add space under the title
+    color: '#333', // Dark color for readability
   },
+
+  // User information text style
   userInfo: {
+    fontSize: 18, // Slightly larger font for user info
+    color: '#555', // Slightly lighter color for info text
+  },
+
+  // Empty activity state text style
+  emptyStateText: {
     fontSize: 16,
+    color: '#888', // Grey for empty state
+    textAlign: 'center',
+    marginTop: 30, // Add margin top for spacing
   },
 });
 

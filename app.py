@@ -29,10 +29,17 @@ reviews_collection = mongo.db.reviews
 notifications_collection = mongo.db.notifications
 notifications_organizationadmin_collection = mongo.db.notification_organizationadmin  # New collection for organization admin notifications
 
-# Define the completed_joined_activity collection
-completed_joined_activity_collection = mongo.db.completed_joined_activity  # Add this line
+# Define the completed_joined_activity and past_activity collections
+completed_joined_activity_collection = mongo.db.completed_joined_activity
+past_activity_collection = mongo.db.past_activity  # New collection for past activities
 
-print(list(join_activity_collection.find()))  # This should return the documents in the collection
+# Print documents in join_activity_collection
+print("Documents in join_activity_collection:")
+print(list(join_activity_collection.find()))
+
+# Print documents in past_activity_collection
+print("Documents in past_activity_collection:")
+print(list(past_activity_collection.find()))
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -531,5 +538,68 @@ def accept_activity():
         print("Error in accept_activity:", e)
         return jsonify({"error": "An error occurred"}), 500
     
+@app.route('/api/completed_joined_activity', methods=['GET'])
+def get_completed_activities():
+    try:
+        activities = completed_joined_activity_collection.find()
+        activities_list = []
+        
+        for activity in activities:
+            activity['_id'] = str(activity['_id'])
+            
+            # Ensure 'image' field exists and format it for front-end
+            if 'image' in activity and activity['image']:
+                # If it's a local file, ensure it's accessible through a URL
+                activity['image_url'] = activity['image']  # assuming this is the URL or path to the image
+            else:
+                activity['image_url'] = None  # or provide a default image URL
+
+            activities_list.append(activity)
+        
+        return jsonify(activities_list), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/complete_activity/<activity_id>', methods=['POST'])
+def complete_activity(activity_id):
+    try:
+        activity = completed_joined_activity_collection.find_one({"_id": ObjectId(activity_id)})
+        if not activity:
+            return jsonify({"error": "Activity not found"}), 404
+        
+        # Insert the activity into the past_activity collection
+        past_activity_collection.insert_one(activity)
+        
+        # Remove the activity from completed_joined_activity
+        completed_joined_activity_collection.delete_one({"_id": ObjectId(activity_id)})
+        
+        return jsonify({"message": "Activity moved to past_activity successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/past_activities', methods=['GET'])
+def get_past_activities():
+    try:
+        # Fetch past activities from MongoDB
+        past_activities = mongo.db.past_activity.find()
+
+        # Convert MongoDB documents to JSON, including 'image'
+        past_activities_list = [
+            {
+                '_id': str(activity.get('_id')),
+                'activity_name': activity.get('activity_name'),
+                'location': activity.get('location'),
+                'date': activity.get('date'),
+                'image': activity.get('image')  # Ensure 'image' field is included
+            }
+            for activity in past_activities
+        ]
+
+        return jsonify(past_activities_list), 200
+    except Exception as e:
+        print(f"Error fetching past activities: {e}")
+        return jsonify({'error': 'Failed to retrieve past activities.'}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
