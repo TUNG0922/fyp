@@ -10,7 +10,7 @@ const ChatActivity = ({ route, navigation }) => {
   useEffect(() => {
     // Fetch existing messages for this activity (chat messages)
     setLoading(true);
-    fetch(`http://localhost:5000/api/getMessages/${activityId}`)
+    fetch(`http://10.0.2.2:5000/api/getMessages/${activityId}`)
       .then((response) => response.json())
       .then((data) => {
         setMessages(data);
