@@ -4,24 +4,10 @@ import { AirbnbRating } from 'react-native-ratings';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const ActivityDetailsVolunteer = () => {
+  const navigation = useNavigation();
   const route = useRoute();
-  const { activity, userId, name, email, image } = route.params || {};
 
-  console.log('User ID:', userId);
-  console.log('Activity ID:', activity._id);
-  console.log('Activity Name:', activity.name);
-  console.log('Email:', email);
-  console.log('Image:', image);
-  console.log('Activity User ID:', activity.userId);
-
-
-  if (!activity || !activity._id) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Activity not found.</Text>
-      </View>
-    );
-  }
+  const { activity, userId, name, email, image, role = 'Volunteer' } = route.params || {};
 
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
@@ -32,7 +18,6 @@ const ActivityDetailsVolunteer = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Check join status
         const checkJoinStatusResponse = await fetch('http://10.0.2.2:5000/api/check_join_status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -45,7 +30,6 @@ const ActivityDetailsVolunteer = () => {
           Alert.alert('Error', joinStatusResult.message || 'Error checking join status.');
         }
 
-        // Fetch reviews
         const fetchReviewsResponse = await fetch(`http://10.0.2.2:5000/api/get_reviews?activityId=${activity._id}`);
         const fetchReviewsResult = await fetchReviewsResponse.json();
         if (fetchReviewsResponse.ok) {
@@ -99,89 +83,66 @@ const ActivityDetailsVolunteer = () => {
   };
 
   const handleJoinActivity = async () => {
-    // Check for all required fields
     if (!userId || !activity._id || !activity.name || !email || !image || !activity.userId) {
-        Alert.alert('Error', 'All required fields must be filled out.');
-        return;
+      Alert.alert('Error', 'All required fields must be filled out.');
+      return;
     }
 
     const joinActivityData = {
-        user_id: userId,
-        username: name,
-        email: email,
-        activity_id: activity._id,
-        activity_name: activity.name,
-        location: activity.location,
-        date: activity.date,
-        image: image,
-        activity_user_id: activity.userId,
+      user_id: userId,
+      username: name,
+      email: email,
+      activity_id: activity._id,
+      activity_name: activity.name,
+      location: activity.location,
+      date: activity.date,
+      image: image,
+      activity_user_id: activity.userId,
     };
 
-    // Log the joinActivityData to check the userId
-    console.log('Joining activity with data:', joinActivityData);
-
     try {
-        const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(joinActivityData),
-        });
-
-        if (response.ok) {
-            Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
-
-            // Add a notification for the volunteer
-            const notificationResponse = await fetch('http://10.0.2.2:5000/api/add_notification', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: userId,
-                    message: 'Your application is pending, please wait.',
-                }),
-            });
-
-            if (!notificationResponse.ok) {
-                console.error('Failed to add notification');
-            }
-        } else {
-            const result = await response.json();
-            Alert.alert('Error', result.message || 'Failed to join the activity.');
-        }
-    } catch (error) {
-        console.error('Error joining activity:', error);
-        Alert.alert('Error', 'An error occurred while joining the activity.');
-    }
-};  
-
-const handleDeleteReview = async (id) => {
-  console.log('Attempting to delete review with ID:', id); // Log the review ID being passed
-  if (!id) {
-      Alert.alert('Error', 'Review ID is missing.');
-      return;
-  }
-
-  try {
-      const response = await fetch('http://10.0.2.2:5000/api/delete_review', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ review_id: id }),
+      const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(joinActivityData),
       });
 
-      const result = await response.json();
       if (response.ok) {
-          setReviews((prevReviews) => prevReviews.filter(review => review._id !== id));
-          Alert.alert('Success', 'Review deleted successfully!');
+        Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
       } else {
-          Alert.alert('Error', result.message || 'Error deleting review.');
+        const result = await response.json();
+        Alert.alert('Error', result.message || 'Failed to join the activity.');
       }
-  } catch {
-      Alert.alert('Error', 'Network error. Please try again later.');
-  }
-};
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while joining the activity.');
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    try {
+      const response = await fetch(`http://10.0.2.2:5000/api/delete_review/${reviewId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+  
+      if (response.ok) {
+        setReviews((prevReviews) => prevReviews.filter((review) => review._id !== reviewId));
+        Alert.alert('Success', 'Review deleted successfully.');
+      } else {
+        const result = await response.json();
+        Alert.alert('Error', result.message || 'Failed to delete review.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while deleting the review.');
+    }
+  };  
+
+  const goToChat = () => {
+    // Navigate to ChatActivity instead of ChatScreen
+    navigation.navigate('ChatActivity', { activityId: activity._id, userId });
+  };
 
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>
@@ -195,18 +156,12 @@ const handleDeleteReview = async (id) => {
         defaultRating={item.rating}
         starContainerStyle={styles.ratingStars}
       />
+  
       <TouchableOpacity onPress={() => handleDeleteReview(item._id)} style={styles.deleteButton}>
-        <Text style={styles.deleteButtonText}>Delete</Text>
+        <Text style={styles.deleteButtonText}>Delete Review</Text>
       </TouchableOpacity>
     </View>
-  );
-
-  const data = [
-    { id: '1', type: 'image', uri: image || 'default_image_url_here' }, // Default image URL if not received
-    { id: '2', type: 'details' },
-    { id: '3', type: 'ratings' },
-    { id: '4', type: 'reviewsSection' },
-  ];
+  );  
 
   if (loading) {
     return (
@@ -217,172 +172,149 @@ const handleDeleteReview = async (id) => {
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={data}
-        renderItem={({ item }) => {
-          switch (item.type) {
-            case 'image':
-              return (
-                <Image 
-                  source={{ uri: item.uri }} 
-                  style={styles.image} 
-                  onError={(error) => {
-                    console.error('Image load error:', error.nativeEvent.error);
-                    Alert.alert('Error', 'Failed to load image.');
-                  }}
-                />
-              );
-            case 'details':
-              return (
-                <View style={styles.details}>
-                  <Text style={styles.title}>{activity.name}</Text>
-                  <Text style={styles.location}>{activity.location}</Text>
-                  <Text style={styles.date}>{activity.date}</Text>
-                  <Text style={styles.description}>{activity.description}</Text>
-                  {!hasJoined ? (
-                    <Button title="Join Activity" onPress={handleJoinActivity} color="#00BFAE" />
-                  ) : (
-                    <Text style={styles.joinedText}>You have joined this activity!</Text>
-                  )}
-                </View>
-              );
-            case 'ratings':
-              return (
-                <View style={styles.ratingsSection}>
-                  <Text style={styles.ratingsTitle}>Add a Review:</Text>
-                  <AirbnbRating
-                    count={5}
-                    reviews={["Terrible", "Bad", "Okay", "Good", "Amazing"]}
-                    size={20}
-                    onFinishRating={setRating}
-                  />
-                  <TextInput
-                    style={styles.reviewInput}
-                    placeholder="Write your review..."
-                    value={reviewText}
-                    onChangeText={setReviewText}
-                  />
-                  <Button title="Submit Review" onPress={handleAddReview} color="#00BFAE" />
-                </View>
-              );
-            case 'reviewsSection':
-              return (
-                <View style={styles.reviewsSection}>
-                  <Text style={styles.reviewsTitle}>Reviews:</Text>
-                  {reviews.length ? (
-                    <FlatList
-                      data={reviews}
-                      renderItem={renderReview}
-                      keyExtractor={item => item._id}
-                    />
-                  ) : (
-                    <Text>No reviews yet.</Text>
-                  )}
-                </View>
-              );
-            default:
-              return null;
-          }
-        }}
-        keyExtractor={(item) => item.id}
-      />
-    </View>
+    <FlatList
+      data={reviews}
+      renderItem={renderReview}
+      keyExtractor={(item) => item._id}
+      ListHeaderComponent={
+        <View style={styles.container}>
+          <Image source={{ uri: image || 'default_image_url_here' }} style={styles.image} />
+          <Text style={styles.activityName}>{activity.name}</Text>
+          <Text style={styles.activityDescription}>{activity.description}</Text>
+          <Text style={styles.activityLocation}>{activity.location}</Text>
+          <Text style={styles.activityDate}>{activity.date}</Text>
+
+          <TouchableOpacity onPress={goToChat} style={styles.chatButton}>
+            <Text style={styles.chatButtonText}>Go to Chat</Text>
+          </TouchableOpacity>
+
+          {!hasJoined && (
+            <TouchableOpacity onPress={handleJoinActivity} style={styles.joinButton}>
+              <Text style={styles.joinButtonText}>Join Activity</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.ratingSection}>
+            <Text style={styles.ratingLabel}>Rate this Activity</Text>
+            <AirbnbRating size={20} onFinishRating={setRating} showRating defaultRating={rating} />
+          </View>
+
+          <TextInput
+            style={styles.reviewInput}
+            value={reviewText}
+            onChangeText={setReviewText}
+            placeholder="Write a review..."
+          />
+          <Button title="Add Review" onPress={handleAddReview} />
+        </View>
+      }
+    />
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
+    padding: 16,
     backgroundColor: '#fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
   },
   image: {
     width: '100%',
     height: 200,
-    borderRadius: 10,
-    marginBottom: 10,
+    resizeMode: 'cover',
+    borderRadius: 8,
   },
-  details: {
-    marginBottom: 20,
-  },
-  title: {
+  activityName: {
     fontSize: 24,
     fontWeight: 'bold',
-  },
-  location: {
-    fontSize: 18,
-    color: '#555',
-  },
-  date: {
-    fontSize: 18,
-    color: '#555',
-  },
-  description: {
-    fontSize: 16,
     marginVertical: 10,
   },
-  joinedText: {
+  activityDescription: {
     fontSize: 16,
-    color: 'green',
+    color: '#666',
+    marginBottom: 10,
   },
-  ratingsSection: {
-    marginVertical: 20,
+  activityLocation: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
   },
-  ratingsTitle: {
-    fontSize: 20,
+  activityDate: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 20,
+  },
+  chatButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  chatButtonText: {
+    color: '#fff',
+    fontSize: 18,
+  },
+  joinButton: {
+    backgroundColor: '#00BFAE',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  joinButtonText: {
+    color: '#fff',
+    fontSize: 18,
+  },
+  ratingSection: {
+    marginBottom: 20,
+  },
+  ratingLabel: {
+    fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 5,
   },
   reviewInput: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
     padding: 10,
-    marginVertical: 10,
-  },
-  reviewsSection: {
-    marginTop: 20,
-  },
-  reviewsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    marginBottom: 10,
+    borderRadius: 8,
   },
   reviewItem: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 8,
     marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    paddingBottom: 10,
   },
   reviewText: {
     fontSize: 16,
   },
   reviewDate: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
+    marginTop: 4,
   },
   reviewAuthor: {
     fontSize: 14,
-    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   deleteButton: {
-    backgroundColor: '#f44336',
-    padding: 10,
+    marginTop: 10,
+    backgroundColor: '#ff5252',
+    padding: 8,
     borderRadius: 5,
     alignItems: 'center',
-    marginTop: 10,
   },
   deleteButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 18,
-    textAlign: 'center',
+    fontSize: 14,
   },
 });
 

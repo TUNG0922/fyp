@@ -153,13 +153,14 @@ const UpcomingActivities = () => {
 };
 
 // Completed Activities Component
-const CompletedActivities = () => {
+const CompletedActivities = ({ userId }) => {  // Assuming 'userId' is passed as a prop
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch activities that match the userId
   const fetchCompletedActivities = async () => {
     try {
-      const response = await axios.get('http://10.0.2.2:5000/api/past_activities');
+      const response = await axios.get(`http://10.0.2.2:5000/api/past_activities?user_id=${userId}`);
       setActivities(response.data);
     } catch (error) {
       console.error('Error fetching completed activities:', error);
@@ -171,7 +172,7 @@ const CompletedActivities = () => {
 
   useEffect(() => {
     fetchCompletedActivities();
-  }, []);
+  }, [userId]); // Re-fetch if the userId changes
 
   const renderActivity = ({ item }) => (
     <View style={styles.activityCard}>
@@ -203,7 +204,7 @@ const CompletedActivities = () => {
           data={activities}
           keyExtractor={(item) => item._id}
           renderItem={renderActivity}
-          ListEmptyComponent={<></>}  // No empty message displayed
+          ListEmptyComponent={<Text>No completed activities available.</Text>}  // Display a message if no activities are found
         />
       )}
     </View>
@@ -211,7 +212,7 @@ const CompletedActivities = () => {
 };
 
 // DiscoverScreen Component
-const DiscoverScreen = ({ username, userId, email }) => {
+const DiscoverScreen = ({ username, userId, email, role }) => { // Ensure role is received as a prop
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
@@ -269,6 +270,7 @@ const DiscoverScreen = ({ username, userId, email }) => {
                     name: username,
                     email: email,
                     image: item.imageUri, // Pass the activity image here
+                    role: role, // Pass the role here
                   })}
                 >
                   <Text style={styles.buttonText}>Details</Text>
@@ -294,13 +296,11 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('userId'); 
-      await AsyncStorage.removeItem('username');
-      await AsyncStorage.removeItem('password');
-      await AsyncStorage.removeItem('role');
-      navigation.navigate('SignIn');
+      await AsyncStorage.multiRemove(['userId', 'username', 'password', 'role']);
+      navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
     } catch (error) {
       console.error('Failed to logout:', error);
+      Alert.alert('Logout Failed', 'Could not log out. Please try again.');
     }
   };
 
@@ -314,13 +314,15 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => navigation.navigate('EditProfileVolunteer', { userId, username, email, password, role })}
+          onPress={() => 
+            navigation.navigate('EditProfileVolunteer', { userId, username, email, password, role })
+          }
         >
           <Text style={styles.buttonText}>Edit Profile</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.button}
-          onPress={() => navigation.navigate('VolunteerHistory')}
+          onPress={() => navigation.navigate('VolunteerHistory', { userId })}
         >
           <Text style={styles.buttonText}>Volunteer History</Text>
         </TouchableOpacity>
@@ -338,7 +340,11 @@ const Tab = createBottomTabNavigator();
 const DashboardScreenVolunteer = ({ route }) => {
   const { userId, username, password, email, role } = route.params;
   console.log("DashboardScreenVolunteer - userId:", userId);
-
+  // Log the username, userId, email, and role to confirm they are passed correctly
+  console.log('Username:', username);
+  console.log('UserId:', userId);
+  console.log('Email:', email);
+  console.log('Role:', role); // Log the role to make sure it's passed in
   return (
     <Tab.Navigator>
       <Tab.Screen 
@@ -428,20 +434,19 @@ const styles = StyleSheet.create({
 
   // Button container for action buttons
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15, // Space between text and buttons
+    flexDirection: 'column', // Change to column for vertical arrangement
+    justifyContent: 'center', // Vertically align the buttons in the center
+    marginTop: 15, // Optional: You can adjust the spacing from the top
   },
-
-  // Style for the buttons
+  
+  // Update the button style if you need extra spacing between buttons
   button: {
     backgroundColor: '#547DBE', // Primary button color
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 8, // Rounded corners for buttons
-    flex: 1,
-    marginHorizontal: 5,
-    alignItems: 'center', // Center button text
+    marginVertical: 10, // Added margin between buttons
+    alignItems: 'center', // Center button text horizontally
   },
 
   // Specific style for the share button (yellow)

@@ -33,6 +33,9 @@ notifications_organizationadmin_collection = mongo.db.notification_organizationa
 completed_joined_activity_collection = mongo.db.completed_joined_activity
 past_activity_collection = mongo.db.past_activity  # New collection for past activities
 
+# Create the messages collection
+messages_collection = mongo.db.messages  # New collection for chat messages
+
 # Print documents in join_activity_collection
 print("Documents in join_activity_collection:")
 print(list(join_activity_collection.find()))
@@ -40,16 +43,6 @@ print(list(join_activity_collection.find()))
 # Print documents in past_activity_collection
 print("Documents in past_activity_collection:")
 print(list(past_activity_collection.find()))
-
-# Find users with plain text passwords and update them to hashed passwords
-for user in volunteers_collection.find():
-    if not user.get("password").startswith("pbkdf2:"):  # Check if password is not hashed
-        hashed_password = generate_password_hash(user["password"])
-        volunteers_collection.update_one(
-            {"_id": user["_id"]},
-            {"$set": {"password": hashed_password}}
-        )
-        print(f"Updated password for user: {user['_id']}")
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -80,35 +73,47 @@ def signup():
 
 @app.route('/api/signin', methods=['POST'])
 def signin():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
-    role = data.get('role')
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        role = data.get('role')
 
-    if not all([email, password, role]):
-        return jsonify({'message': 'Email, password, and role are required'}), 400
+        # Verify all fields are present
+        if not all([email, password, role]):
+            return jsonify({'message': 'Email, password, and role are required'}), 400
 
-    # Query the volunteers collection for the user
-    user = volunteers_collection.find_one({'email': email})
+        # Fetch user from 'volunteers' collection based on email
+        user = volunteers_collection.find_one({'email': email})
+        
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
 
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
+        # Check if provided password matches the stored password hash
+        stored_password_hash = user.get('password')
+        if not stored_password_hash or not check_password_hash(stored_password_hash, password):
+            return jsonify({'message': 'Invalid password'}), 401
 
-    # Check the password hash
-    if not check_password_hash(user.get('password', ''), password):
-        return jsonify({'message': 'Invalid password'}), 401
+        # Check if role matches user's role in the database
+        if user.get('role') != role:
+            return jsonify({'message': 'Role mismatch'}), 403
 
-    # Check the role
-    if user.get('role') != role:
-        return jsonify({'message': 'Role mismatch'}), 403
+        # Return user details if sign-in is successful
+        return jsonify({
+            'message': 'Sign-in successful',
+            'userId': str(user['_id']),
+            'username': user.get('name', 'N/A'),
+            'role': user['role']
+        }), 200
 
-    # Return user information upon successful sign-in
-    return jsonify({
-        'message': 'Sign-in successful',
-        'userId': str(user['_id']),
-        'username': user.get('name', 'N/A'),
-        'role': user['role']
-    }), 200
+    except PyMongoError as e:
+        # Handle any database-related errors
+        print(f"Database error: {e}")
+        return jsonify({'message': 'Database error occurred'}), 500
+    except Exception as e:
+        # Handle any other unexpected errors
+        print(f"Unexpected error: {e}")
+        return jsonify({'message': 'An unexpected error occurred'}), 500
 
 @app.route('/api/add_activity', methods=['POST'])
 def add_activity():
@@ -279,18 +284,14 @@ def get_reviews():
     reviews_list = [{'text': r['text'], 'date': r['date'], 'rating': r['rating'], 'name': r['name'], '_id': str(r['_id'])} for r in reviews]
     return jsonify({'reviews': reviews_list}), 200
 
-@app.route('/api/delete_review', methods=['POST'])
-def delete_review():
-    data = request.get_json()
-    review_id = data.get('review_id')
-
-    if not review_id:
-        return jsonify({'message': 'Review ID is required'}), 400
-
+@app.route('/api/delete_review/<review_id>', methods=['DELETE'])
+def delete_review(review_id):
+    # Check if the review_id is valid
     if not ObjectId.is_valid(review_id):
         return jsonify({'message': 'Invalid Review ID format'}), 400
 
     try:
+        # Attempt to delete the review from the database
         result = reviews_collection.delete_one({'_id': ObjectId(review_id)})
         if result.deleted_count:
             return jsonify({'message': 'Review deleted successfully'}), 200
@@ -591,9 +592,19 @@ def complete_activity(activity_id):
 @app.route('/api/past_activities', methods=['GET'])
 def get_past_activities():
     try:
-        # Fetch past activities from MongoDB
-        past_activities = mongo.db.past_activity.find()
-
+        # Get the user_id from the query parameters
+        user_id = request.args.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'User ID is required.'}), 400
+        
+        # Fetch past activities for the specific user from MongoDB
+        past_activities = mongo.db.past_activity.find({'user_id': user_id})
+        
+        # Check if no activities are found
+        if not past_activities:
+            return jsonify({'message': 'No past activities found for this user.'}), 404
+        
         # Convert MongoDB documents to JSON, including 'image'
         past_activities_list = [
             {
@@ -611,5 +622,40 @@ def get_past_activities():
         print(f"Error fetching past activities: {e}")
         return jsonify({'error': 'Failed to retrieve past activities.'}), 500
 
+# Route to handle sending a message
+@app.route('/api/sendMessage', methods=['POST'])
+def send_message():
+    data = request.get_json()
+    user_id = data.get('userId')
+    activity_id = data.get('activityId')
+    message = data.get('message')
+
+    if not user_id or not activity_id or not message:
+        return jsonify({"error": "Missing data"}), 400
+
+    # Fetch the user from the users collection using the user_id
+    user = mongo.db.users.find_one({"userId": user_id})
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    name = user.get('name')  # Fetch the 'name' field instead of 'username'
+
+    # If the name is missing, return an error
+    if not name:
+        return jsonify({"error": "Name not found"}), 404
+
+    # Insert the message into MongoDB with the name
+    message_data = {
+        "userId": user_id,
+        "activityId": activity_id,
+        "message": message,
+        "name": name,  # Store the 'name' in the message data
+        "createdAt": datetime.datetime.utcnow()
+    }
+
+    mongo.db.messages.insert_one(message_data)
+    return jsonify({"success": True}), 200
+    
 if __name__ == '__main__':
     app.run(debug=True)

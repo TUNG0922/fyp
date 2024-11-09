@@ -26,7 +26,6 @@ const HomeScreen = ({ route }) => {
       }
     } catch (error) {
       console.error('Fetch activities error:', error);
-      Alert.alert('Error', 'Failed to fetch joined activities. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -201,7 +200,7 @@ const DiscoverScreen = ({ route, navigation }) => {
       const data = await response.json();
       if (response.ok) {
         Alert.alert('Success', 'Activity added successfully');
-        handleCancelButtonPress();
+        handleCancel(); // Clear form and close it
         fetchActivities(); // Refresh activities list
       } else {
         Alert.alert('Error', data.error || 'Something went wrong');
@@ -210,6 +209,16 @@ const DiscoverScreen = ({ route, navigation }) => {
       console.error('Submit error:', error);
       Alert.alert('Error', 'Something went wrong');
     }
+  };
+
+  // Clear form fields and hide the form
+  const handleCancel = () => {
+    setName('');
+    setLocation('');
+    setDate('');
+    setDescription('');
+    setImageUri(null);
+    setFormVisible(false);
   };
 
   // Delete an activity
@@ -304,7 +313,7 @@ const DiscoverScreen = ({ route, navigation }) => {
 
           <View style={styles.buttonContainer}>
             <Button title="Submit" onPress={handleSubmit} color="#00BFAE" />
-            <TouchableOpacity style={styles.cancelButton} onPress={() => setFormVisible(false)}>
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>

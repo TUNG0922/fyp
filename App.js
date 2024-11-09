@@ -2,15 +2,18 @@ import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+
+// Import screens
 import SignInScreen from './screens/SignInScreen';
 import SignUpScreen from './screens/SignUpScreen';
 import DashboardScreenVolunteer from './screens/DashboardScreenVolunteer';
 import DashboardScreenPlatformAdmin from './screens/DashboardScreenPlatformAdmin';
 import DashboardScreenOrganizationAdmin from './screens/DashboardScreenOrganizationAdmin';
 import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer';
-import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; // For ActivityDetailsScreen
-import NotificationVolunteer from './screens/NotificationVolunteer'; // For NotificationVolunteer
-import EditProfileVolunteer from './screens/EditProfileVolunteer'; // Importing the EditProfileVolunteer
+import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; 
+import NotificationVolunteer from './screens/NotificationVolunteer'; 
+import EditProfileVolunteer from './screens/EditProfileVolunteer'; 
+import ChatActivity from './screens/ChatActivity'; // Import the ChatActivity screen
 
 const Stack = createStackNavigator();
 
@@ -103,10 +106,18 @@ export default function App() {
           }}
         />
         <Stack.Screen
-          name="EditProfileVolunteer" // Register the EditProfileVolunteer screen
+          name="EditProfileVolunteer"
           component={EditProfileVolunteer}
           options={{ 
             headerTitle: 'Edit Profile',
+            headerLeft: () => null, // Ensures the back button is removed
+          }}
+        />
+        <Stack.Screen
+          name="ChatActivity"  // Add the ChatActivity screen here
+          component={ChatActivity}
+          options={{
+            headerTitle: 'Chat',
             headerLeft: () => null, // Ensures the back button is removed
           }}
         />
