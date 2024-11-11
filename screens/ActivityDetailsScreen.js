@@ -1,3 +1,4 @@
+// hello
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Alert, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Rating } from 'react-native-ratings';
