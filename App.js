@@ -1,3 +1,8 @@
+// git status
+// git add <file>
+// git commit -m "message"
+// git push
+
 import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
