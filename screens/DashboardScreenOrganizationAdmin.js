@@ -335,7 +335,12 @@ const ProfileScreen = ({ route, navigation }) => {
 
   const handleLogout = () => {
     // Implement your logout logic here
-    navigation.navigate('SignIn'); // Assuming you have a 'LoginScreen' defined in your navigator
+    navigation.navigate('SignIn'); // Assuming you have a 'SignIn' screen defined in your navigator
+  };
+
+  const handleEditProfile = () => {
+    // Navigate to an EditProfileScreen with the current user details
+    navigation.navigate('EditProfile', { username, userId, email, role });
   };
 
   return (
@@ -343,6 +348,10 @@ const ProfileScreen = ({ route, navigation }) => {
       <Text style={styles.screenText}>Name: {username}</Text>
       <Text style={styles.screenText}>Email: {email}</Text>
       <Text style={styles.screenText}>Role: {role}</Text>
+
+      <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+        <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Logout</Text>
@@ -411,40 +420,52 @@ const DashboardScreenOrganizationAdmin = ({ route }) => {
 
 // Define styles for the component
 const styles = StyleSheet.create({
+  // Screen Container
   screenContainer: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
+  
+  // Text styles
   screenText: {
-    fontSize: 24, // Increase the font size for better visibility
-    fontWeight: 'bold', // Make the header bold
-    marginBottom: 20, // More space below the title
-    textAlign: 'center', // Center the title
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
+  
+  // Activity Item Layout
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 15, // Increased padding for a more spacious look
+    padding: 15,
     backgroundColor: '#fff',
-    borderRadius: 10, // More rounded corners
-    marginBottom: 15, // More space between items
-    elevation: 2, // Slightly increased shadow for depth
+    borderRadius: 10,
+    marginBottom: 15,
+    elevation: 2,
   },
+  
+  // Activity Image
   activityImage: {
-    width: 60, // Slightly larger image
+    width: 60,
     height: 60,
-    borderRadius: 10, // Match the rounding of activityItem
-    borderColor: '#e1e1e1', // Add border color for contrast
-    borderWidth: 1, // Border width for a clearer separation
+    borderRadius: 10,
+    borderColor: '#e1e1e1',
+    borderWidth: 1,
   },
+  
+  // Activity Details Container
   activityDetails: {
     flex: 1,
-    marginLeft: 15, // Increased margin for spacing
+    marginLeft: 15,
   },
+  
+  // Activity Text Styles
   activityName: {
-    fontSize: 18, // Increased font size for visibility
+    fontSize: 18,
     fontWeight: 'bold',
   },
   activityLocation: {
@@ -455,6 +476,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
   },
+  
+  // User Info Text
   userNameText: {
     fontSize: 14,
     fontWeight: 'bold',
@@ -464,16 +487,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#555',
   },
+  
+  // Delete Button Styles
   deleteButton: {
     backgroundColor: '#FF4B4B',
     borderRadius: 5,
-    paddingVertical: 8, // Consistent padding
-    paddingHorizontal: 10, // Consistent padding
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   deleteButtonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
+  
+  // Form Styles
   formContainer: {
     marginTop: 20,
     backgroundColor: '#fff',
@@ -486,16 +513,18 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
-    marginBottom: 15, // Increased margin for better spacing
+    marginBottom: 15,
   },
   textArea: {
     height: 100,
-    textAlignVertical: 'top', // Align text to the top of the area
+    textAlignVertical: 'top',
   },
   formLabel: {
     fontWeight: 'bold',
     marginBottom: 5,
   },
+  
+  // Image Picker Styles
   imagePickerButton: {
     backgroundColor: '#00BFAE',
     borderRadius: 10,
@@ -507,6 +536,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  
+  // Floating Add Button
   addButton: {
     backgroundColor: '#00BFAE',
     borderRadius: 50,
@@ -514,30 +545,38 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 20,
-    elevation: 5, // Add shadow for depth
+    elevation: 5,
   },
+  
+  // Button Container for Layout
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
   },
+  
+  // Cancel Button
   cancelButton: {
     backgroundColor: '#FF4B4B',
     borderRadius: 5,
     padding: 10,
     flex: 1,
-    marginHorizontal: 5, // Use horizontal margin for consistent spacing
+    marginHorizontal: 5,
   },
   cancelButtonText: {
     color: '#fff',
     textAlign: 'center',
   },
+  
+  // Selected Image
   selectedImage: {
     width: 100,
     height: 100,
     marginBottom: 10,
     borderRadius: 5,
   },
+  
+  // Logout Button
   logoutButton: {
     backgroundColor: '#FF4B4B',
     padding: 12,
@@ -546,6 +585,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  // Edit Profile Button
+  editProfileButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  editProfileButtonText: {
     color: '#fff',
     fontWeight: 'bold',
   },
