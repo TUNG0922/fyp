@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from bson.objectid import ObjectId
 import datetime
+from datetime import datetime
+from pymongo.errors import PyMongoError
 
 app = Flask(__name__)
 
@@ -622,40 +624,54 @@ def get_past_activities():
         print(f"Error fetching past activities: {e}")
         return jsonify({'error': 'Failed to retrieve past activities.'}), 500
 
-# Route to handle sending a message
 @app.route('/api/sendMessage', methods=['POST'])
 def send_message():
     data = request.get_json()
-    user_id = data.get('userId')
-    activity_id = data.get('activityId')
-    message = data.get('message')
 
-    if not user_id or not activity_id or not message:
-        return jsonify({"error": "Missing data"}), 400
+    # Validate the incoming data
+    if not data or not data.get('message') or not data.get('userId') or not data.get('activityId'):
+        return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
-    # Fetch the user from the users collection using the user_id
-    user = mongo.db.users.find_one({"userId": user_id})
-    
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-
-    name = user.get('name')  # Fetch the 'name' field instead of 'username'
-
-    # If the name is missing, return an error
-    if not name:
-        return jsonify({"error": "Name not found"}), 404
-
-    # Insert the message into MongoDB with the name
-    message_data = {
-        "userId": user_id,
-        "activityId": activity_id,
-        "message": message,
-        "name": name,  # Store the 'name' in the message data
-        "createdAt": datetime.datetime.utcnow()
+    # Construct the message document to insert into the database
+    message = {
+        'userId': data['userId'],
+        'activityId': data['activityId'],
+        'message': data['message'],
+        'name': data['name'],
+        'role': data['role'],
+        'createdAt': datetime.utcnow()  # Use UTC time for consistency
     }
 
-    mongo.db.messages.insert_one(message_data)
-    return jsonify({"success": True}), 200
+    try:
+        # Insert the message into the messages collection in MongoDB
+        result = messages_collection.insert_one(message)
+
+        # Return success response
+        return jsonify({'success': True, 'message': 'Message sent successfully'}), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Route to fetch messages based on activityId
+@app.route('/api/getMessages/<activityId>/<userId>', methods=['GET'])
+def get_messages(activityId, userId):
+    try:
+        # Query the messages collection for matching activityId and userId
+        messages = messages_collection.find({
+            'activityId': activityId,
+            'userId': userId
+        })
+        
+        # Convert MongoDB cursor to a list of dictionaries
+        messages_list = list(messages)
+
+        # Modify the _id field to be a string, MongoDB automatically converts it to ObjectId
+        for msg in messages_list:
+            msg['_id'] = str(msg['_id'])  # Convert ObjectId to string for the frontend
+
+        return jsonify(messages_list), 200  # Return the messages as JSON response
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  # Return an error response if something goes wrong
     
 if __name__ == '__main__':
     app.run(debug=True)

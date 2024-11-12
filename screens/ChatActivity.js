@@ -1,78 +1,156 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, Button, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 
-const ChatActivity = ({ route, navigation }) => {
-  const { activityId, userId } = route.params; // Receive activityId and userId from route params
+const ChatActivity = ({ route }) => {
+  const { activityId, userId, name, role } = route.params || {};
+
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Reference to FlatList to scroll to the bottom
+  const flatListRef = useRef();
+
+  // Log to trace received params
   useEffect(() => {
-    // Fetch existing messages for this activity (chat messages)
+    console.log("Received params:", { activityId, userId, name, role });
+  }, [activityId, userId, name]);
+
+  // Fetch messages when the component mounts or activityId/userId change
+  const fetchMessages = () => {
     setLoading(true);
-    fetch(`http://10.0.2.2:5000/api/getMessages/${activityId}`)
-      .then((response) => response.json())
+    fetch(`http://10.0.2.2:5000/api/getMessages/${activityId}/${userId}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json(); // Directly parse as JSON
+      })
       .then((data) => {
-        setMessages(data);
-        setLoading(false);
+        if (Array.isArray(data)) {
+          setMessages(data);
+        } else {
+          setError('Invalid message data format');
+        }
       })
       .catch((error) => {
         console.error('Error fetching messages:', error);
+        setError('Error fetching messages');
+      })
+      .finally(() => {
         setLoading(false);
       });
-  }, [activityId]); // This useEffect depends on activityId
+  };
 
-  const handleSendMessage = async () => {
-    if (!newMessage) {
-      return; // Don't send empty messages
+  useEffect(() => {
+    if (activityId && userId) {
+      fetchMessages();
     }
-  
-    setLoading(true);
+  }, [activityId, userId]);
+
+  // Handle sending a new message
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) {
+      Alert.alert('Message required', 'Please enter a message before sending.');
+      return;
+    }
+
+    setSending(true);
     const messageData = {
       userId,
       activityId,
       message: newMessage,
+      name,
+      role,
+      createdAt: new Date().toISOString(),
     };
-  
+
     try {
       const response = await fetch('http://10.0.2.2:5000/api/sendMessage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(messageData),
       });
-  
-      const data = await response.json();
+
+      const data = await response.json(); // Directly parse JSON
+
       if (data.success) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { ...messageData, createdAt: new Date() },
+          { ...messageData, createdAt: new Date().toISOString() },
         ]);
-        setNewMessage(''); // Clear the message input after sending
+        setNewMessage('');
+        // Scroll to the bottom after sending a message
+        flatListRef.current.scrollToEnd({ animated: true });
       } else {
-        console.error('Failed to send message');
+        setError(data.error || 'Failed to send message');
+        Alert.alert('Error', data.error || 'Failed to send message');
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      setError('Error sending message');
+      Alert.alert('Error', 'An error occurred while sending the message');
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
-  
 
   return (
     <View style={styles.container}>
-      <FlatList
-      data={messages}
-      renderItem={({ item }) => (
-        <View style={styles.messageItem}>
-          <Text style={styles.messageAuthor}>{item.name}</Text> {/* Display the name */}
-          <Text style={styles.messageText}>{item.message}</Text>
-          <Text style={styles.messageDate}>{new Date(item.createdAt).toLocaleTimeString()}</Text>
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#00BFAE" />
         </View>
       )}
-      keyExtractor={(item, index) => index.toString()}
-      inverted // Invert list to show new messages at the bottom
-    />
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.messageItem,
+              {
+                alignSelf: role === 'Volunteer' ? 'flex-start' : 'flex-end',
+                backgroundColor: role === 'Volunteer' ? '#f1f1f1' : '#00BFAE',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.messageAuthor,
+                { textAlign: role === 'Volunteer' ? 'left' : 'right' },
+              ]}
+            >
+              {item.name}
+            </Text>
+            <Text
+              style={[
+                styles.messageText,
+                { textAlign: role === 'Volunteer' ? 'left' : 'right' },
+              ]}
+            >
+              {item.message}
+            </Text>
+            <Text
+              style={[
+                styles.messageDate,
+                { textAlign: role === 'Volunteer' ? 'left' : 'right' },
+              ]}
+            >
+              {new Date(item.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </View>
+        )}
+        keyExtractor={(item, index) => index.toString()}
+        // No need for inverted, newest message is at the bottom naturally
+      />
 
       <TextInput
         style={styles.input}
@@ -80,7 +158,12 @@ const ChatActivity = ({ route, navigation }) => {
         value={newMessage}
         onChangeText={setNewMessage}
       />
-      <Button title="Send" onPress={handleSendMessage} color="#00BFAE" />
+      <Button
+        title={sending ? 'Sending...' : 'Send'}
+        onPress={handleSendMessage}
+        color="#00BFAE"
+        disabled={sending}
+      />
     </View>
   );
 };
@@ -92,10 +175,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   messageItem: {
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#f1f1f1',
+    padding: 12,
+    marginBottom: 12,
     borderRadius: 8,
+    maxWidth: '95%',
   },
   messageAuthor: {
     fontWeight: 'bold',
@@ -103,6 +186,8 @@ const styles = StyleSheet.create({
   },
   messageText: {
     color: '#444',
+    fontSize: 16,
+    lineHeight: 20,
   },
   messageDate: {
     fontSize: 12,
@@ -122,6 +207,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });
 

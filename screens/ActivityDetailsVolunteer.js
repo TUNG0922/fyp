@@ -9,6 +9,8 @@ const ActivityDetailsVolunteer = () => {
 
   const { activity, userId, name, email, image, role = 'Volunteer' } = route.params || {};
 
+  console.log('Name passed in:', name);
+
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
@@ -140,8 +142,13 @@ const ActivityDetailsVolunteer = () => {
   };  
 
   const goToChat = () => {
-    // Navigate to ChatActivity instead of ChatScreen
-    navigation.navigate('ChatActivity', { activityId: activity._id, userId });
+    // Now the 'name' variable is passed to the ChatActivity screen
+    navigation.navigate('ChatActivity', {
+      activityId: activity._id,
+      userId: userId,
+      name: name,  // Pass 'name' correctly here
+      role: role,  // Pass 'role' here as well
+    });
   };
 
   const renderReview = ({ item }) => (
