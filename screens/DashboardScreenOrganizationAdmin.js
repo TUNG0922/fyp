@@ -133,12 +133,15 @@ const DiscoverScreen = ({ route, navigation }) => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch activities from the API
+  // Fetch activities specific to Organization Admin
   const fetchActivities = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('http://10.0.2.2:5000/api/activities');
+      const response = await fetch(`http://10.0.2.2:5000/api/activities?userId=${userId}`);
       const data = await response.json();
+      console.log("Fetched Data:", data); // Check the fetched data here
       if (response.ok) {
         setActivities(data);
       } else {
@@ -147,8 +150,10 @@ const DiscoverScreen = ({ route, navigation }) => {
     } catch (error) {
       console.error('Fetch activities error:', error);
       Alert.alert('Error', 'Failed to fetch activities');
+    } finally {
+      setLoading(false);
     }
-  };
+  };  
 
   useEffect(() => {
     fetchActivities();
@@ -260,20 +265,25 @@ const DiscoverScreen = ({ route, navigation }) => {
           <Text style={styles.activityLocation}>{item.location}</Text>
           <Text style={styles.activityDate}>{item.date}</Text>
         </View>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
+
+        {item.userId === userId && (
+          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.screenContainer}>
-      <FlatList
-        data={activities}
-        renderItem={renderActivityItem}
-        keyExtractor={(item) => item._id}
-      />
+      {loading ? <ActivityIndicator size="large" color="#00BFAE" /> : (
+        <FlatList
+          data={activities}
+          renderItem={renderActivityItem}
+          keyExtractor={(item) => item._id}
+        />
+      )}
 
       {isFormVisible && (
         <ScrollView style={styles.formContainer}>
@@ -301,29 +311,23 @@ const DiscoverScreen = ({ route, navigation }) => {
           />
           <Text style={styles.formLabel}>Description</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={styles.input}
             placeholder="Enter description"
             value={description}
             onChangeText={setDescription}
-            multiline
           />
           <TouchableOpacity style={styles.imagePickerButton} onPress={handleImagePicker}>
-            <Text style={styles.imagePickerText}>Pick an Image</Text>
+            <Text style={styles.imagePickerButtonText}>Pick an image</Text>
           </TouchableOpacity>
-
-          <View style={styles.buttonContainer}>
-            <Button title="Submit" onPress={handleSubmit} color="#00BFAE" />
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+          <View style={styles.formActions}>
+            <TouchableOpacity onPress={handleSubmit}>
+              <Text style={styles.submitButton}>Submit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleCancel}>
+              <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
-      )}
-
-      {!isFormVisible && (
-        <TouchableOpacity style={styles.addButton} onPress={() => setFormVisible(true)}>
-          <Icon name="plus" size={24} color="#fff" />
-        </TouchableOpacity>
       )}
     </SafeAreaView>
   );
@@ -423,8 +427,7 @@ const styles = StyleSheet.create({
   // Screen Container
   screenContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#f5f5f5', // Light background color for the whole screen
     padding: 20,
   },
   
@@ -434,47 +437,53 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+    color: '#333', // Dark text color for better readability
   },
   
-  // Activity Item Layout
+  // Activity Item Layout (Card style)
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: '#fff', // White card background
+    borderRadius: 15,
     marginBottom: 15,
-    elevation: 2,
+    elevation: 5, // Adding shadow to make it pop
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 5,
   },
   
   // Activity Image
   activityImage: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     borderRadius: 10,
     borderColor: '#e1e1e1',
     borderWidth: 1,
+    marginRight: 15, // Spacing between image and text
   },
   
   // Activity Details Container
   activityDetails: {
     flex: 1,
-    marginLeft: 15,
   },
   
   // Activity Text Styles
   activityName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#333', // Dark text color for better readability
   },
   activityLocation: {
     fontSize: 15,
-    color: '#666',
+    color: '#777', // Light gray for less important text
   },
   activityDate: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
+    color: '#999', // Lighter color for date
   },
   
   // User Info Text
@@ -482,6 +491,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginTop: 5,
+    color: '#333',
   },
   userEmailText: {
     fontSize: 12,
@@ -491,9 +501,10 @@ const styles = StyleSheet.create({
   // Delete Button Styles
   deleteButton: {
     backgroundColor: '#FF4B4B',
-    borderRadius: 5,
+    borderRadius: 10,
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
   },
   deleteButtonText: {
     color: '#fff',
@@ -504,16 +515,20 @@ const styles = StyleSheet.create({
   formContainer: {
     marginTop: 20,
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 15,
+    padding: 20,
     elevation: 3,
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 5,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 15,
+    backgroundColor: '#fafafa', // Lighter background for input fields
   },
   textArea: {
     height: 100,
@@ -522,12 +537,13 @@ const styles = StyleSheet.create({
   formLabel: {
     fontWeight: 'bold',
     marginBottom: 5,
+    color: '#333', // Dark text color for labels
   },
   
   // Image Picker Styles
   imagePickerButton: {
     backgroundColor: '#00BFAE',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     marginBottom: 10,
@@ -541,11 +557,13 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: '#00BFAE',
     borderRadius: 50,
-    padding: 10,
+    padding: 15,
     position: 'absolute',
     bottom: 20,
     right: 20,
     elevation: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   // Button Container for Layout
@@ -558,14 +576,15 @@ const styles = StyleSheet.create({
   // Cancel Button
   cancelButton: {
     backgroundColor: '#FF4B4B',
-    borderRadius: 5,
-    padding: 10,
+    borderRadius: 10,
+    padding: 12,
     flex: 1,
     marginHorizontal: 5,
+    alignItems: 'center',
   },
   cancelButtonText: {
     color: '#fff',
-    textAlign: 'center',
+    fontWeight: 'bold',
   },
   
   // Selected Image
@@ -573,13 +592,13 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginBottom: 10,
-    borderRadius: 5,
+    borderRadius: 10,
   },
   
   // Logout Button
   logoutButton: {
     backgroundColor: '#FF4B4B',
-    padding: 12,
+    padding: 15,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 20,
@@ -602,5 +621,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
 export default DashboardScreenOrganizationAdmin;
