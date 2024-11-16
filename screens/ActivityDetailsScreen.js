@@ -1,10 +1,14 @@
-// hello
+// git status
+// git add <file>
+// git commit -m "message"
+// git push
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Alert, FlatList, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Rating } from 'react-native-ratings';
 
-const ActivityDetailsScreen = ({ route }) => {
-  const { activity } = route.params;
+const ActivityDetailsScreen = ({ route, navigation }) => {
+  const { activity, userId, username } = route.params;
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,6 +17,8 @@ const ActivityDetailsScreen = ({ route }) => {
   const [replyText, setReplyText] = useState('');
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editedActivity, setEditedActivity] = useState({ ...activity });
+
+  console.log("ActivityDetailsScreen params:", route.params);
 
   useEffect(() => {
     fetchReviews();
@@ -34,7 +40,7 @@ const ActivityDetailsScreen = ({ route }) => {
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   const handleReplyPress = (reviewId) => {
     setCurrentReviewId(reviewId);
@@ -89,21 +95,32 @@ const ActivityDetailsScreen = ({ route }) => {
       const data = await response.json();
   
       if (response.ok) {
-        Alert.alert('Success', 'Activity updated successfully');
+        // Update the state with the new activity details to reflect immediately in the UI
+        setEditedActivity({ ...editedActivity });
         setEditModalVisible(false);
-        fetchReviews();
+        setLoading(true);
+        fetchReviews(); // Re-fetch the reviews if needed
+        Alert.alert('Success', 'Activity updated successfully');
       } else {
         Alert.alert('Error', data.error || 'Failed to update activity');
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to update activity');
     }
-  };    
+  };
 
   const handleViewListPress = () => {
-    Alert.alert("View List", "This button will show the list of activities.");
+    navigation.navigate('ViewList', {
+      activity: activity, // Pass the entire activity object
+      userId: userId, // Pass userId
+      username: username, // Pass username
+    });
+  };  
+
+  const handleViewChatPress = () => {
+    Alert.alert("View Chat", "This button will navigate to the chat section for this activity.");
   };
-  
+
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>
       <View style={styles.ratingContainer}>
@@ -122,6 +139,13 @@ const ActivityDetailsScreen = ({ route }) => {
       <TouchableOpacity style={styles.button} onPress={() => handleReplyPress(item._id)}>
         <Text style={styles.buttonText}>Reply</Text>
       </TouchableOpacity>
+      {item.replies && item.replies.length > 0 && (
+        <View style={styles.repliesContainer}>
+          {item.replies.map((reply, index) => (
+            <Text key={index} style={styles.replyText}>Reply: {reply}</Text>
+          ))}
+        </View>
+      )}
     </View>
   );
 
@@ -143,6 +167,9 @@ const ActivityDetailsScreen = ({ route }) => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleViewListPress}>
             <Text style={styles.buttonText}>View List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleViewChatPress}>
+            <Text style={styles.buttonText}>View Chat</Text>
           </TouchableOpacity>
         </View>
       );
@@ -237,10 +264,11 @@ const ActivityDetailsScreen = ({ route }) => {
               placeholder="Description"
               value={editedActivity.description}
               onChangeText={(text) => setEditedActivity({ ...editedActivity, description: text })}
+              multiline
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.button} onPress={handleEditSubmit}>
-                <Text style={styles.buttonText}>Submit Edit</Text>
+                <Text style={styles.buttonText}>Save Changes</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.button} onPress={() => setEditModalVisible(false)}>
                 <Text style={styles.buttonText}>Cancel</Text>
@@ -256,92 +284,82 @@ const ActivityDetailsScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    padding: 15,
+    backgroundColor: '#f9f9f9',
   },
   image: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
-    marginBottom: 15,
+    borderRadius: 10,
   },
   imagePlaceholder: {
     width: '100%',
     height: 200,
-    borderRadius: 8,
-    backgroundColor: '#ddd',
-    marginBottom: 15,
+    backgroundColor: '#ccc',
+    borderRadius: 10,
   },
   detailsContainer: {
     padding: 15,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginBottom: 15,
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333',
   },
   location: {
     fontSize: 18,
-    marginBottom: 5,
-    color: '#666',
+    color: '#555',
   },
   date: {
     fontSize: 16,
-    marginBottom: 10,
-    color: '#666',
+    color: '#777',
   },
   description: {
     fontSize: 16,
-    marginBottom: 20,
-    color: '#444',
+    marginTop: 10,
   },
   button: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    backgroundColor: '#4CAF50',
+    padding: 10,
     borderRadius: 5,
-    marginVertical: 5,
+    marginTop: 10,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: 'white',
     textAlign: 'center',
+    fontWeight: 'bold',
   },
   reviewContainer: {
     padding: 15,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    marginTop: 15,
   },
   reviewTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
   },
   reviewItem: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    backgroundColor: '#fff',
+    borderRadius: 8,
     marginBottom: 10,
   },
-  commentContainer: {
+  ratingContainer: {
     marginBottom: 10,
   },
   reviewText: {
     fontSize: 16,
-    marginBottom: 5,
   },
   reviewAuthor: {
     fontSize: 14,
-    color: '#666',
+    color: '#777',
+    marginTop: 5,
   },
   emptyText: {
-    textAlign: 'center',
     fontSize: 16,
     color: '#777',
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
   },
   modalContainer: {
     flex: 1,
@@ -350,38 +368,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 10,
+    backgroundColor: 'white',
     padding: 20,
+    borderRadius: 8,
     width: '80%',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
-    textAlign: 'center',
   },
   textInput: {
-    borderWidth: 1,
+    height: 40,
     borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingLeft: 8,
     borderRadius: 5,
-    padding: 10,
-    marginVertical: 5,
-    backgroundColor: '#F9F9F9',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  ratingContainer: {
-    marginBottom: 10,
-  },
-  rating: {
-    alignSelf: 'flex-start',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
   },
 });
 

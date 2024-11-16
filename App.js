@@ -1,8 +1,3 @@
-// git status
-// git add <file>
-// git commit -m "message"
-// git push
-
 import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -19,6 +14,7 @@ import ActivityDetailsScreen from './screens/ActivityDetailsScreen';
 import NotificationVolunteer from './screens/NotificationVolunteer'; 
 import EditProfileVolunteer from './screens/EditProfileVolunteer'; 
 import ChatActivity from './screens/ChatActivity'; // Import the ChatActivity screen
+import ViewList from './screens/ViewList';  // Import the new ViewList screen
 
 const Stack = createStackNavigator();
 
@@ -123,6 +119,14 @@ export default function App() {
           component={ChatActivity}
           options={{
             headerTitle: 'Chat',
+            headerLeft: () => null, // Ensures the back button is removed
+          }}
+        />
+        <Stack.Screen
+          name="ViewList"  // Add the ViewList screen here
+          component={ViewList}
+          options={{
+            headerTitle: 'View List',
             headerLeft: () => null, // Ensures the back button is removed
           }}
         />
