@@ -2,71 +2,69 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 
 const ViewList = ({ route }) => {
-  const { activity, userId, username } = route.params; // Destructure all passed parameters
-  const [activities, setActivities] = useState([]);
+  const { activity, userId, username } = route.params; // Destructure passed parameters
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch activities on mount and log the passed parameters for debugging
   useEffect(() => {
-    console.log('ViewList Activity:', activity);
+    console.log('Activity ID:', activity._id);
     console.log('User ID:', userId);
     console.log('Username:', username);
-    fetchActivities();
+    fetchMessages();
   }, []);
 
-  const fetchActivities = async () => {
-    setLoading(true);
+  const fetchMessages = async () => {
     try {
-      // Append userId and username to the API request for personalized data
       const response = await fetch(
-        `http://10.0.2.2:5000/api/get_activities?userId=${userId}&username=${username}`
+        `http://10.0.2.2:5000/api/getMessages?activityId=${activity._id}`
       );
       const data = await response.json();
-
+      
+      // Log the response to debug
+      console.log('Messages Response:', data);
+      
       if (response.ok) {
-        setActivities(data.activities || []); // Assuming 'activities' is the response data
+        setMessages(data.messages); // Save the retrieved messages
       } else {
-        setError(data.error || 'Failed to load activities');
+        setError(data.error || 'Failed to load messages');
       }
     } catch (error) {
-      setError('Failed to load activities');
-    } finally {
-      setLoading(false);
+      setError('Failed to load messages');
+      console.error('Fetch Error:', error); // Log the fetch error for debugging
     }
   };
 
-  const renderActivityItem = ({ item }) => (
-    <View style={styles.activityItem}>
-      <Text style={styles.activityName}>{item.name}</Text>
-      <Text style={styles.activityLocation}>{item.location}</Text>
-      <Text style={styles.activityDate}>{item.date}</Text>
+  const renderMessageItem = ({ item }) => (
+    <View style={styles.messageItem}>
+      {/* Ensure all text is wrapped inside Text component */}
+      <Text style={styles.messageName}>Name: {item.name}</Text>
+      <Text style={styles.messageContent}>Message: {item.message}</Text>
+      <Text style={styles.messageDate}>Date: {new Date(item.createdAt).toLocaleString()}</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
+      {/* Show loading indicator while messages are being fetched */}
       {loading && <ActivityIndicator size="large" color="#0000ff" />}
+      
+      {/* Show error if there was an issue fetching messages */}
       {error && <Text style={styles.errorText}>{error}</Text>}
-      {!loading && !error && activities.length > 0 && (
+      
+      {/* Display messages if successfully loaded */}
+      {!loading && !error && messages.length > 0 && (
         <FlatList
-          data={activities}
-          renderItem={renderActivityItem}
-          keyExtractor={(item) => item._id}
+          data={messages}
+          renderItem={renderMessageItem}
+          keyExtractor={(item, index) => index.toString()} // Use index as fallback for unique keys
         />
       )}
-      {!loading && !error && activities.length === 0 && (
-        <Text style={styles.noActivitiesText}>No activities found.</Text>
+      
+      {/* Show a message if no messages were found */}
+      {!loading && !error && messages.length === 0 && (
+        <Text style={styles.noMessagesText}>No messages found.</Text>
       )}
-      {/* Display passed activity and user details */}
-      <View style={styles.detailsSection}>
-        <Text style={styles.detailsHeader}>Passed Data:</Text>
-        <Text style={styles.detailsText}>Activity: {activity?.name}</Text>
-        <Text style={styles.detailsText}>Location: {activity?.location}</Text>
-        <Text style={styles.detailsText}>Date: {activity?.date}</Text>
-        <Text style={styles.detailsText}>User ID: {userId}</Text>
-        <Text style={styles.detailsText}>Username: {username}</Text>
-      </View>
     </View>
   );
 };
@@ -77,21 +75,21 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#f9f9f9',
   },
-  activityItem: {
+  messageItem: {
     padding: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
     marginBottom: 10,
   },
-  activityName: {
+  messageName: {
     fontSize: 18,
     fontWeight: 'bold',
   },
-  activityLocation: {
+  messageContent: {
     fontSize: 16,
     color: '#555',
   },
-  activityDate: {
+  messageDate: {
     fontSize: 14,
     color: '#777',
   },
@@ -101,27 +99,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  noActivitiesText: {
+  noMessagesText: {
     fontSize: 16,
     color: '#555',
     textAlign: 'center',
     marginTop: 20,
-  },
-  detailsSection: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#eaeaea',
-    borderRadius: 8,
-  },
-  detailsHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  detailsText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
   },
 });
 

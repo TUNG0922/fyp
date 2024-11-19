@@ -3,8 +3,7 @@ from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 from bson.objectid import ObjectId
-import datetime
-from datetime import datetime
+from datetime import datetime, timezone  # Ensure timezone is imported
 from pymongo.errors import PyMongoError
 
 app = Flask(__name__)
@@ -217,17 +216,16 @@ def join_activity():
             'activity_id': activity_id,
             'activity_name': activity_name,
             'activity_user_id': activity_user_id,  # Include activity_user_id here
-            'timestamp': datetime.datetime.now()
+            'timestamp': datetime.now(timezone.utc)  # Use timezone-aware timestamp
         })
 
-        # Create a notification for the organization admin in the new "notification_organizationadmin" collection
+        # Create a notification for the organization admin
         notifications_organizationadmin_collection.insert_one({
             'user_id': activity_user_id,  # The organization admin's ID
             'message': f'User "{username}" has applied to joined your activity "{activity_name}".',
             'activity_id': activity_id,
             'activity_name': activity_name,
-            'activity_user_id': activity_user_id,  # Include the activity userId
-            'timestamp': datetime.datetime.now()
+            'timestamp': datetime.now(timezone.utc)  # Use timezone-aware timestamp
         })
 
         return jsonify({'message': 'Activity joined successfully!'}), 201
@@ -235,7 +233,7 @@ def join_activity():
     except Exception as e:
         print(f"Error occurred: {str(e)}")  # Log the error for debugging
         return jsonify({'message': 'Error joining activity', 'error': str(e)}), 500
-
+    
 @app.route('/api/check_join_status', methods=['POST'])
 def check_join_status():
     data = request.get_json()
@@ -652,26 +650,44 @@ def send_message():
         print(f"Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# Route to fetch messages based on activityId
-@app.route('/api/getMessages/<activityId>/<userId>', methods=['GET'])
-def get_messages(activityId, userId):
+@app.route('/api/getMessages', methods=['GET'])
+def get_messages():
     try:
-        # Query the messages collection for matching activityId and userId
-        messages = messages_collection.find({
-            'activityId': activityId,
-            'userId': userId
-        })
+        # Get activityId from query parameters
+        activity_id = request.args.get('activityId')
+
+        # Ensure activityId is provided
+        if not activity_id:
+            return jsonify({'error': 'activityId is required'}), 400
         
-        # Convert MongoDB cursor to a list of dictionaries
-        messages_list = list(messages)
+        # Check if the activityId is a valid ObjectId
+        if not ObjectId.is_valid(activity_id):
+            return jsonify({'error': 'Invalid activityId format'}), 400
 
-        # Modify the _id field to be a string, MongoDB automatically converts it to ObjectId
-        for msg in messages_list:
-            msg['_id'] = str(msg['_id'])  # Convert ObjectId to string for the frontend
+        # Convert activity_id to ObjectId (MongoDB uses ObjectId for _id)
+        activity_id = ObjectId(activity_id)
 
-        return jsonify(messages_list), 200  # Return the messages as JSON response
+        # Query the messages collection using activityId
+        messages = messages_collection.find({'activityId': activity_id})
+
+        # Convert MongoDB cursor to list and format data
+        messages_list = []
+        for msg in messages:
+            # Convert _id and createdAt to strings for frontend compatibility
+            messages_list.append({
+                '_id': str(msg['_id']),  # Convert ObjectId to string
+                'userId': msg.get('userId', ''),  # Include userId from the collection (safe get)
+                'activityId': str(msg.get('activityId', '')),  # activityId as string
+                'message': msg.get('message', ''),  # message text
+                'name': msg.get('name', ''),  # sender's name
+                'role': msg.get('role', ''),  # sender's role
+                'createdAt': str(msg.get('createdAt', ''))  # timestamp as string
+            })
+
+        # Return the messages in JSON format
+        return jsonify(messages_list), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500  # Return an error response if something goes wrong
+        return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

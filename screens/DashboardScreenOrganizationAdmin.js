@@ -277,14 +277,26 @@ const DiscoverScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.screenContainer}>
-      {loading ? <ActivityIndicator size="large" color="#00BFAE" /> : (
+      {loading ? (
+        <ActivityIndicator size="large" color="#00BFAE" />
+      ) : (
         <FlatList
           data={activities}
           renderItem={renderActivityItem}
           keyExtractor={(item) => item._id}
         />
       )}
-
+  
+      {/* Floating Button to Open the Form */}
+      {!isFormVisible && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setFormVisible(true)}
+        >
+          <Text style={styles.addButtonText}>Add Activity</Text>
+        </TouchableOpacity>
+      )}
+  
       {isFormVisible && (
         <ScrollView style={styles.formContainer}>
           {imageUri && <Image source={{ uri: imageUri }} style={styles.selectedImage} />}
