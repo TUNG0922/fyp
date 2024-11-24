@@ -689,5 +689,45 @@ def get_messages():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+@app.route('/api/reject_activity', methods=['POST'])
+def reject_activity():
+    try:
+        # Log the raw data received for debugging
+        print("Raw data received:", request.data)
+
+        # Access the JSON payload directly
+        data = request.json  # This is equivalent to request.get_json()
+        print("Parsed JSON data:", data)  # Log the parsed data
+
+        # Retrieve the join_activity_id from the request
+        join_activity_id = data.get("join_activity_id")
+
+        # Validate join_activity_id presence and format
+        if not join_activity_id:
+            return jsonify({"error": "Activity ID is required"}), 400
+
+        # Attempt to create ObjectId (this will fail if join_activity_id is not valid)
+        try:
+            object_id = ObjectId(join_activity_id)
+        except Exception as e:
+            print("Invalid ObjectId:", e)
+            return jsonify({"error": "Invalid Activity ID format"}), 400
+
+        # Access the join_activity collection and find the document by _id
+        activity = join_activity_collection.find_one({"_id": object_id})
+
+        if not activity:
+            return jsonify({"error": "Activity not found"}), 404
+
+        # Remove the activity from the join_activity collection
+        join_activity_collection.delete_one({"_id": object_id})
+
+        # Return success response
+        return jsonify({"message": "Activity rejected successfully"}), 200
+
+    except Exception as e:
+        print("Error in reject_activity:", e)
+        return jsonify({"error": "An error occurred"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -60,18 +60,34 @@ const HomeScreen = ({ route }) => {
     }
   };  
 
-const handleReject = async (activityId) => {
+  const handleReject = async (activityId) => {
     try {
-      const response = await axios.delete(`http://10.0.2.2:5000/api/reject_activity/${activityId}`);
+      if (!activityId) {
+        throw new Error('Activity ID is missing');
+      }
+      console.log('Rejecting activity with ID:', activityId);
+  
+      // Send POST request with the activity ID in the request body
+      const response = await axios.post('http://10.0.2.2:5000/api/reject_activity', {
+        join_activity_id: activityId, // Pass the ID as expected by the backend
+      });
+  
       if (response.data.message === 'Activity rejected successfully') {
         Alert.alert('Rejected', 'The activity has been rejected successfully!');
-        setJoinedActivities((prevActivities) => prevActivities.filter((activity) => activity._id !== activityId));
+        setJoinedActivities((prevActivities) =>
+          prevActivities.filter((activity) => activity._id !== activityId)
+        );
+      } else {
+        Alert.alert('Error', response.data.message || 'Failed to reject the activity.');
       }
     } catch (error) {
       console.error('Error rejecting activity:', error);
-      Alert.alert('Error', 'Failed to reject the activity. Please try again.');
+      Alert.alert(
+        'Error',
+        error.response?.data?.error || 'Failed to reject the activity. Please try again.'
+      );
     }
-  };
+  };  
 
   if (loading) {
     return (
@@ -331,16 +347,17 @@ const DiscoverScreen = ({ route, navigation }) => {
           <TouchableOpacity style={styles.imagePickerButton} onPress={handleImagePicker}>
             <Text style={styles.imagePickerButtonText}>Pick an image</Text>
           </TouchableOpacity>
-          <View style={styles.formActions}>
-            <TouchableOpacity onPress={handleSubmit}>
-              <Text style={styles.submitButton}>Submit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleCancel}>
-              <Text style={styles.cancelButton}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      )}
+          <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.submitButtonText}>Submit</Text>
+          </TouchableOpacity>
+        </View>
+                </ScrollView>
+              )}
     </SafeAreaView>
   );
 };
@@ -533,7 +550,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 5,
-  },
+    height: 800, // Fixed height in pixels (adjust this value as needed)
+    marginBottom: 20, // Add bottom margin to make it look less cramped
+  },  
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -580,10 +599,11 @@ const styles = StyleSheet.create({
   
   // Button Container for Layout
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
+    flexDirection: 'row', // Align buttons horizontally
+    justifyContent: 'space-between', // Space the buttons evenly
+    marginTop: 20, // Adds top margin to separate from the form
+    width: '100%', // Ensures buttons take up full width for alignment
+  },   
   
   // Cancel Button
   cancelButton: {
@@ -632,5 +652,47 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  submitButton: {
+    backgroundColor: '#00BFAE', // Vibrant green color
+    borderRadius: 12, // Rounded corners for a modern look
+    paddingVertical: 15, // Increased padding for better spacing
+    paddingHorizontal: 30, // Horizontal padding to make the button wider
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5, // Adds shadow for depth
+    shadowColor: '#000', // Shadow color for better contrast
+    shadowOpacity: 0.2, // Slightly stronger shadow opacity
+    shadowOffset: { width: 0, height: 4 }, // Shadow offset to make it look elevated
+    shadowRadius: 5, // Shadow blur radius
+    flex: 1, // Ensures buttons have equal width
+    marginHorizontal: 5, // Small margin between buttons
+  },
+  submitButtonText: {
+    color: '#fff', // White text for contrast
+    fontWeight: 'bold',
+    fontSize: 16, // Slightly larger font size
+  },
+  
+  cancelButton: {
+    backgroundColor: '#FF4B4B', // Vibrant red color for cancel action
+    borderRadius: 12, // Rounded corners for consistency
+    paddingVertical: 15, // Increased padding for better spacing
+    paddingHorizontal: 30, // Horizontal padding to make the button wider
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5, // Adds shadow to make it pop
+    shadowColor: '#000', // Shadow color for depth
+    shadowOpacity: 0.2, // Slightly stronger shadow opacity
+    shadowOffset: { width: 0, height: 4 }, // Shadow offset for better visual effect
+    shadowRadius: 5, // Shadow blur radius
+    flex: 1, // Ensures buttons have equal width
+    marginHorizontal: 5, // Small margin between buttons
+  },
+  cancelButtonText: {
+    color: '#fff', // White text for contrast
+    fontWeight: 'bold',
+    fontSize: 16, // Slightly larger font size
+  },
 });
+
 export default DashboardScreenOrganizationAdmin;
