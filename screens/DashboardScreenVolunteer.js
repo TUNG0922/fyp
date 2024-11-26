@@ -153,26 +153,61 @@ const UpcomingActivities = () => {
 };
 
 // Completed Activities Component
-const CompletedActivities = ({ userId }) => {  // Assuming 'userId' is passed as a prop
+const CompletedActivities = ({ userId }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch activities that match the userId
-  const fetchCompletedActivities = async () => {
+  // Log userId when it changes
+  useEffect(() => {
+    if (userId) {
+      console.log("Received userId in component:", userId); // Log userId to verify if it's being passed correctly
+      fetchCompletedActivities(userId); // Fetch activities when userId is set
+    } else {
+      console.log("userId is undefined or null");
+    }
+  }, [userId]);
+
+  // Fetch completed activities using the provided userId
+  const fetchCompletedActivities = async (userId) => {
+    if (!userId) {
+      console.log("userId is undefined or null, skipping fetch");
+      setActivities([]);  // Ensure state is cleared if userId is invalid
+      return;
+    }
+  
     try {
+      console.log("Making API request with userId:", userId);
+      
+      // Making the API request with the given userId
       const response = await axios.get(`http://10.0.2.2:5000/api/past_activities?user_id=${userId}`);
-      setActivities(response.data);
+  
+      // Checking if the response status is 200 (OK)
+      if (response.status === 200) {
+        const fetchedActivities = response.data;
+  
+        // Check if any activities were returned
+        if (Array.isArray(fetchedActivities) && fetchedActivities.length > 0) {
+          console.log("Fetched activities:", fetchedActivities);
+          setActivities(fetchedActivities); // Update the state with the fetched activities
+        } else {
+          console.log("No activities found.");
+          setActivities([]); // If no activities are found, clear the state
+        }
+      } else {
+        console.error(`API returned an unexpected status: ${response.status}`);
+        setActivities([]);  // Clear activities state on API failure
+      }
     } catch (error) {
-      console.error('Error fetching completed activities:', error);
-      Alert.alert('Error', 'Failed to fetch completed activities. Please try again.');
+      // Log detailed error for debugging
+      console.error("Error fetching completed activities:", error.response ? error.response.data : error.message);
+      
+      // Reset activities state in case of error
+      setActivities([]);
     } finally {
+      // Stop loading state regardless of success or failure
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchCompletedActivities();
-  }, [userId]); // Re-fetch if the userId changes
 
   const renderActivity = ({ item }) => (
     <View style={styles.activityCard}>
@@ -381,8 +416,12 @@ const DashboardScreenVolunteer = ({ route }) => {
             <TopTab.Screen name="Pending">
               {() => <PendingActivities userId={userId} />}
             </TopTab.Screen>
-            <TopTab.Screen name="Upcoming" component={UpcomingActivities} />
-            <TopTab.Screen name="Completed" component={CompletedActivities} />
+            <TopTab.Screen name="Upcoming">
+              {() => <UpcomingActivities userId={userId} />}
+            </TopTab.Screen>
+            <TopTab.Screen name="Completed">
+              {() => <CompletedActivities userId={userId} />}
+            </TopTab.Screen>
           </TopTab.Navigator>
         )}
         options={{

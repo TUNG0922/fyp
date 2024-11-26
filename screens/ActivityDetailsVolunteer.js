@@ -192,7 +192,7 @@ const ActivityDetailsVolunteer = () => {
           <Text style={styles.activityDate}>{activity.date}</Text>
 
           <TouchableOpacity onPress={goToChat} style={styles.chatButton}>
-            <Text style={styles.chatButtonText}>Go to Chat</Text>
+            <Text style={styles.chatButtonText}>Chat</Text>
           </TouchableOpacity>
 
           {!hasJoined && (

@@ -5,6 +5,8 @@ from flask_cors import CORS
 from bson.objectid import ObjectId
 from datetime import datetime, timezone  # Ensure timezone is imported
 from pymongo.errors import PyMongoError
+import logging
+from bson.json_util import dumps
 
 app = Flask(__name__)
 
@@ -591,36 +593,23 @@ def complete_activity(activity_id):
     
 @app.route('/api/past_activities', methods=['GET'])
 def get_past_activities():
-    try:
-        # Get the user_id from the query parameters
-        user_id = request.args.get('user_id')
-        
-        if not user_id:
-            return jsonify({'error': 'User ID is required.'}), 400
-        
-        # Fetch past activities for the specific user from MongoDB
-        past_activities = mongo.db.past_activity.find({'user_id': user_id})
-        
-        # Check if no activities are found
-        if not past_activities:
-            return jsonify({'message': 'No past activities found for this user.'}), 404
-        
-        # Convert MongoDB documents to JSON, including 'image'
-        past_activities_list = [
-            {
-                '_id': str(activity.get('_id')),
-                'activity_name': activity.get('activity_name'),
-                'location': activity.get('location'),
-                'date': activity.get('date'),
-                'image': activity.get('image')  # Ensure 'image' field is included
-            }
-            for activity in past_activities
-        ]
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
 
-        return jsonify(past_activities_list), 200
+    try:
+        # Fetch activities based on user_id
+        activities = mongo.db.past_activity.find({"user_id": user_id})
+        
+        # Convert activities to a list and serialize ObjectId to string
+        activities_list = [activity for activity in activities]
+
+        # Use bson.json_util.dumps to convert MongoDB documents to JSON-serializable format
+        activities_json = dumps(activities_list)  # This will convert ObjectId to string
+
+        return activities_json, 200  # Return the JSON response
     except Exception as e:
-        print(f"Error fetching past activities: {e}")
-        return jsonify({'error': 'Failed to retrieve past activities.'}), 500
+        return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
 
 @app.route('/api/sendMessage', methods=['POST'])
 def send_message():
