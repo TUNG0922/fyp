@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Share, TouchableOpacity, Alert, Button } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TextInput, Share, TouchableOpacity, Alert, Button } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NotificationVolunteer from './NotificationVolunteer'; // Import the Notification component
@@ -212,17 +212,19 @@ const CompletedActivities = ({ userId }) => {  // Assuming 'userId' is passed as
 };
 
 // DiscoverScreen Component
-const DiscoverScreen = ({ username, userId, email, role }) => { // Ensure role is received as a prop
+const DiscoverScreen = ({ username, userId, email, role }) => {
   const [activities, setActivities] = useState([]);
+  const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState(''); // State for search query
   const navigation = useNavigation();
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const response = await fetch('http://10.0.2.2:5000/api/activities');
-        const data = await response.json();
-        setActivities(data);
+        const response = await axios.get('http://10.0.2.2:5000/api/activities');
+        setActivities(response.data);
+        setFilteredActivities(response.data); // Set the initial filtered activities
       } catch (error) {
         console.error('Error fetching activities:', error);
       } finally {
@@ -231,6 +233,20 @@ const DiscoverScreen = ({ username, userId, email, role }) => { // Ensure role i
     };
     fetchActivities();
   }, []);
+
+  // Handle search input change
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim() === '') {
+      setFilteredActivities(activities); // If search is cleared, show all activities
+    } else {
+      const filteredData = activities.filter(activity =>
+        activity.name.toLowerCase().includes(query.toLowerCase()) || 
+        activity.location.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredActivities(filteredData);
+    }
+  };
 
   const handleShare = async (activity) => {
     try {
@@ -243,17 +259,28 @@ const DiscoverScreen = ({ username, userId, email, role }) => { // Ensure role i
   };
 
   return (
-    <View style={styles.container}>
+    <View style={{ flex: 1 }}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Icon name="search" size={20} color="#000" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search activities..."
+          value={searchQuery}
+          onChangeText={handleSearch} // Update search query on input change
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#547DBE" />
       ) : (
         <FlatList
-          data={activities}
+          data={filteredActivities}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => (
             <View style={styles.activityCard}>
-              <Image 
-                source={{ uri: item.imageUri }} 
+              <Image
+                source={{ uri: item.imageUri }}
                 style={styles.activityImage}
                 onError={() => console.log('Error loading image:', item.imageUri)}
                 resizeMode="cover"
@@ -269,8 +296,8 @@ const DiscoverScreen = ({ username, userId, email, role }) => { // Ensure role i
                     userId: userId,
                     name: username,
                     email: email,
-                    image: item.imageUri, // Pass the activity image here
-                    role: role, // Pass the role here
+                    image: item.imageUri,
+                    role: role,
                   })}
                 >
                   <Text style={styles.buttonText}>Details</Text>
@@ -398,7 +425,25 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#F5F5F5', // Light background color
   },
-
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingLeft: 10,
+  },
   // Card to display each activity
   activityCard: {
     backgroundColor: 'white',
