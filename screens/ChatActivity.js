@@ -13,42 +13,31 @@ const ChatActivity = ({ route }) => {
   // Reference to FlatList to scroll to the bottom
   const flatListRef = useRef();
 
-  // Log to trace received params
-  useEffect(() => {
-    console.log("Received params:", { activityId, userId, name, role });
-  }, [activityId, userId, name]);
-
-  // Fetch messages when the component mounts or activityId/userId change
-  const fetchMessages = () => {
+  // Fetch messages from the backend
+  const fetchMessages = async () => {
     setLoading(true);
-    fetch(`http://10.0.2.2:5000/api/getMessages/${activityId}/${userId}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json(); // Directly parse as JSON
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setMessages(data);
-        } else {
-          setError('Invalid message data format');
-        }
-      })
-      .catch((error) => {
-        console.error('Error fetching messages:', error);
-        setError('Error fetching messages');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+    setError(null); // Reset the error before new request
+    try {
+      const response = await fetch(`http://10.0.2.2:5000/api/getMessages/${activityId}/${userId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
 
-  useEffect(() => {
-    if (activityId && userId) {
-      fetchMessages();
+      const data = await response.json();
+      console.log("Fetched messages:", data); // Debug: log the response
+
+      if (Array.isArray(data)) {
+        setMessages(data);
+      } else {
+        setError('Invalid message data format');
+      }
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+      setError('Error fetching messages');
+    } finally {
+      setLoading(false);
     }
-  }, [activityId, userId]);
+  };
 
   // Handle sending a new message
   const handleSendMessage = async () => {
@@ -74,7 +63,7 @@ const ChatActivity = ({ route }) => {
         body: JSON.stringify(messageData),
       });
 
-      const data = await response.json(); // Directly parse JSON
+      const data = await response.json();
 
       if (data.success) {
         setMessages((prevMessages) => [
@@ -82,19 +71,52 @@ const ChatActivity = ({ route }) => {
           { ...messageData, createdAt: new Date().toISOString() },
         ]);
         setNewMessage('');
-        // Scroll to the bottom after sending a message
         flatListRef.current.scrollToEnd({ animated: true });
       } else {
         setError(data.error || 'Failed to send message');
         Alert.alert('Error', data.error || 'Failed to send message');
       }
-    } catch (error) {
+    } catch (err) {
+      console.error('Error sending message:', err);
       setError('Error sending message');
       Alert.alert('Error', 'An error occurred while sending the message');
     } finally {
       setSending(false);
     }
   };
+
+  // Rendering each message
+  const renderMessage = ({ item }) => {
+    const isVolunteer = item.role === 'Volunteer';
+  
+    return (
+      <View
+        style={[ 
+          styles.messageItem,
+          {
+            alignSelf: isVolunteer ? 'flex-end' : 'flex-start',  // Display volunteer's messages on the right (flex-end), and organization admin's on the left (flex-start)
+            backgroundColor: isVolunteer ? '#00BFAE' : '#f1f1f1',  // Set background color based on role
+          },
+        ]}
+      >
+        <Text style={[styles.messageAuthor, { textAlign: isVolunteer ? 'right' : 'left' }]}>
+          {item.name}
+        </Text>
+        <Text style={[styles.messageText, { textAlign: isVolunteer ? 'right' : 'left' }]}>
+          {item.message}
+        </Text>
+        <Text style={[styles.messageDate, { textAlign: isVolunteer ? 'right' : 'left' }]}>
+          {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </Text>
+      </View>
+    );
+  };  
+
+  useEffect(() => {
+    if (activityId && userId) {
+      fetchMessages();
+    }
+  }, [activityId, userId]); // Re-fetch if activityId or userId changes
 
   return (
     <View style={styles.container}>
@@ -109,47 +131,10 @@ const ChatActivity = ({ route }) => {
       <FlatList
         ref={flatListRef}
         data={messages}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.messageItem,
-              {
-                alignSelf: role === 'Volunteer' ? 'flex-start' : 'flex-end',
-                backgroundColor: role === 'Volunteer' ? '#f1f1f1' : '#00BFAE',
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.messageAuthor,
-                { textAlign: role === 'Volunteer' ? 'left' : 'right' },
-              ]}
-            >
-              {item.name}
-            </Text>
-            <Text
-              style={[
-                styles.messageText,
-                { textAlign: role === 'Volunteer' ? 'left' : 'right' },
-              ]}
-            >
-              {item.message}
-            </Text>
-            <Text
-              style={[
-                styles.messageDate,
-                { textAlign: role === 'Volunteer' ? 'left' : 'right' },
-              ]}
-            >
-              {new Date(item.createdAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-          </View>
-        )}
-        keyExtractor={(item, index) => index.toString()}
-        // No need for inverted, newest message is at the bottom naturally
+        renderItem={renderMessage}
+        keyExtractor={(item) => item._id} // Assuming each message has a unique _id
+        onContentSizeChange={() => flatListRef.current.scrollToEnd({ animated: true })}
+        onLayout={() => flatListRef.current.scrollToEnd({ animated: true })}
       />
 
       <TextInput

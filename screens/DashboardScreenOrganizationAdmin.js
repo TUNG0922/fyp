@@ -372,8 +372,8 @@ const ProfileScreen = ({ route, navigation }) => {
   };
 
   const handleEditProfile = () => {
-    // Navigate to an EditProfileScreen with the current user details
-    navigation.navigate('EditProfile', { username, userId, email, role });
+    // Navigate to EditProfileOrganizationAdmin screen with the current user details
+    navigation.navigate('EditProfileOrganizationAdmin', { username, userId, email, role });
   };
 
   return (

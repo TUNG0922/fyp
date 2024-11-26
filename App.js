@@ -13,6 +13,7 @@ import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer';
 import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; 
 import NotificationVolunteer from './screens/NotificationVolunteer'; 
 import EditProfileVolunteer from './screens/EditProfileVolunteer'; 
+import EditProfileOrganizationAdmin from './screens/EditProfileOrganizationAdmin';  // Import the new EditProfileOrganizationAdmin screen
 import ChatActivity from './screens/ChatActivity'; // Import the ChatActivity screen
 import ViewList from './screens/ViewList';  // Import the new ViewList screen
 
@@ -110,6 +111,14 @@ export default function App() {
           name="EditProfileVolunteer"
           component={EditProfileVolunteer}
           options={{ 
+            headerTitle: 'Edit Profile',
+            headerLeft: () => null, // Ensures the back button is removed
+          }}
+        />
+        <Stack.Screen
+          name="EditProfileOrganizationAdmin"  // Add EditProfileOrganizationAdmin here
+          component={EditProfileOrganizationAdmin}
+          options={{
             headerTitle: 'Edit Profile',
             headerLeft: () => null, // Ensures the back button is removed
           }}

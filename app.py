@@ -650,44 +650,35 @@ def send_message():
         print(f"Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/getMessages', methods=['GET'])
-def get_messages():
+@app.route('/api/getMessages/<activity_id>/<user_id>', methods=['GET'])
+def get_messages(activity_id, user_id):
     try:
-        # Get activityId from query parameters
-        activity_id = request.args.get('activityId')
+        # Validate the activityId and userId
+        if not activity_id or not user_id:
+            return jsonify({'error': 'activityId and userId are required'}), 400
 
-        # Ensure activityId is provided
-        if not activity_id:
-            return jsonify({'error': 'activityId is required'}), 400
-        
-        # Check if the activityId is a valid ObjectId
-        if not ObjectId.is_valid(activity_id):
-            return jsonify({'error': 'Invalid activityId format'}), 400
+        # Query the messages collection to find messages based on activityId and userId
+        messages = messages_collection.find({'activityId': activity_id, 'userId': user_id})
 
-        # Convert activity_id to ObjectId (MongoDB uses ObjectId for _id)
-        activity_id = ObjectId(activity_id)
-
-        # Query the messages collection using activityId
-        messages = messages_collection.find({'activityId': activity_id})
-
-        # Convert MongoDB cursor to list and format data
+        # Convert MongoDB cursor to list and format data for the frontend
         messages_list = []
         for msg in messages:
-            # Convert _id and createdAt to strings for frontend compatibility
             messages_list.append({
                 '_id': str(msg['_id']),  # Convert ObjectId to string
-                'userId': msg.get('userId', ''),  # Include userId from the collection (safe get)
-                'activityId': str(msg.get('activityId', '')),  # activityId as string
-                'message': msg.get('message', ''),  # message text
-                'name': msg.get('name', ''),  # sender's name
-                'role': msg.get('role', ''),  # sender's role
-                'createdAt': str(msg.get('createdAt', ''))  # timestamp as string
+                'userId': msg.get('userId', ''),
+                'activityId': msg.get('activityId', ''),
+                'message': msg.get('message', ''),
+                'name': msg.get('name', ''),
+                'role': msg.get('role', ''),
+                'createdAt': str(msg.get('createdAt', ''))  # Convert to string for frontend
             })
 
-        # Return the messages in JSON format
+        # Return the messages as a JSON response
         return jsonify(messages_list), 200
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in get_messages: {e}")
+        return jsonify({'error': f"An error occurred: {str(e)}"}), 500
     
 @app.route('/api/reject_activity', methods=['POST'])
 def reject_activity():
