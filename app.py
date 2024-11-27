@@ -709,5 +709,45 @@ def reject_activity():
         print("Error in reject_activity:", e)
         return jsonify({"error": "An error occurred"}), 500
 
+@app.route('/api/getList', methods=['GET'])
+def get_user_list():
+    activity_id = request.args.get('activityId')
+    
+    if not activity_id:
+        return jsonify({"error": "Activity ID is required"}), 400
+
+    # Log the activity_id for debugging
+    print("Received Activity ID:", activity_id)
+    
+    # If activity_id is passed as a string, no need to convert to ObjectId
+    # Directly use it in the query
+    
+    try:
+        # First, try to find completed activities in the completed_joined_activity collection
+        completed_activities_cursor = completed_joined_activity_collection.find({"activity_id": activity_id})
+        completed_activities = list(completed_activities_cursor)
+        
+        # If no completed activities found, try searching in the past_activity collection
+        if not completed_activities:
+            print("No completed activities found, searching in the past_activity collection...")
+            completed_activities_cursor = past_activity_collection.find({"activity_id": activity_id})
+            completed_activities = list(completed_activities_cursor)
+        
+        print("Completed Activities Retrieved:", completed_activities)  # Log result for debugging
+        
+        if not completed_activities:
+            return jsonify({"error": "No completed activities found for the provided activity ID"}), 404
+        
+        # Extract the user list (username, email) from the activities
+        user_list = [
+            {"username": activity.get("username", "Unknown"), "email": activity.get("email", "Unknown")}
+            for activity in completed_activities
+        ]
+        
+        return jsonify({"list": user_list}), 200
+    except Exception as e:
+        print("Error Details:", str(e))
+        return jsonify({"error": "An error occurred while fetching the user list.", "details": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

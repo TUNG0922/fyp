@@ -25,7 +25,7 @@ const HomeScreen = ({ route }) => {
         setJoinedActivities(userJoinedActivities);
       }
     } catch (error) {
-      console.error('Fetch activities error:', error);
+      //console.error('Fetch activities error:', error);
     } finally {
       setLoading(false);
     }
