@@ -38,6 +38,7 @@ past_activity_collection = mongo.db.past_activity  # New collection for past act
 
 # Create the messages collection
 messages_collection = mongo.db.messages  # New collection for chat messages
+reply_messages_collection = mongo.db.replyMessages  # New collection for reply messages
 
 # Print documents in join_activity_collection
 print("Documents in join_activity_collection:")
@@ -748,6 +749,93 @@ def get_user_list():
     except Exception as e:
         print("Error Details:", str(e))
         return jsonify({"error": "An error occurred while fetching the user list.", "details": str(e)}), 500
+    
+@app.route('/api/getMessagesList', methods=['GET'])
+def get_messages_list():
+    activity_id = request.args.get('activityId')
+    print(f"Received activityId: {activity_id}")  # Debug log
+    if not activity_id:
+        return jsonify({'error': 'activityId is required'}), 400
 
+    try:
+        # Fetch all messages for the given activityId
+        messages_cursor = mongo.db.messages.find({"activityId": activity_id})
+        messages_list = []
+
+        # Use a set to track unique userIds
+        seen_user_ids = set()
+
+        for msg in messages_cursor:
+            user_id = msg.get("userId")
+            if user_id not in seen_user_ids:  # Check if userId is unique
+                seen_user_ids.add(user_id)  # Add to the set
+                messages_list.append({
+                    "_id": str(msg["_id"]),
+                    "name": msg.get("name", "Unknown"),
+                })
+
+        print(f"Filtered Messages: {messages_list}")  # Log filtered messages
+        return jsonify({'messages': messages_list}), 200
+
+    except Exception as e:
+        print(f"Error retrieving messages: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+    
+@app.route('/api/reply_to_review', methods=['POST'])
+def reply_to_review():
+    data = request.json
+    review_id = data.get('reviewId')
+    reply_text = data.get('replyText')
+
+    if not review_id or not reply_text:
+        return jsonify({'error': 'Missing reviewId or replyText'}), 400
+
+    try:
+        # Ensure review_id is a valid ObjectId
+        if not ObjectId.is_valid(review_id):
+            return jsonify({'error': 'Invalid reviewId'}), 400
+
+        # Save the reply in the `replyMessages` collection
+        reply_entry = {
+            'reviewId': ObjectId(review_id),  # Ensure it is stored as ObjectId
+            'replyText': reply_text,
+            'timestamp': datetime.utcnow()
+        }
+
+        # Insert into the `replyMessages` collection
+        mongo.db.replyMessages.insert_one(reply_entry)
+
+        return jsonify({'message': 'Reply saved successfully'}), 200
+
+    except Exception as e:
+        # Log the exception and send the error message in the response
+        app.logger.error(f"Error occurred while saving reply: {str(e)}")
+        return jsonify({'error': f"Internal server error: {str(e)}"}), 500
+
+@app.route('/api/get_replies', methods=['GET'])
+def get_replies():
+    review_id = request.args.get('reviewId')
+    if not review_id:
+        return jsonify({"error": "Review ID is required"}), 400
+
+    # Check if the review_id is a valid ObjectId
+    if not ObjectId.is_valid(review_id):
+        return jsonify({"error": "Invalid Review ID format"}), 400
+
+    # Fetch replies from the database based on review_id
+    replies = mongo.db.replyMessages.find({"reviewId": ObjectId(review_id)})
+
+    # Construct a list of replies with detailed information
+    reply_list = []
+    for reply in replies:
+        reply_list.append({
+            "replyId": str(reply.get("_id")),  # Convert ObjectId to string
+            "text": reply.get("replyText"),    # Changed to 'replyText'
+            "author": reply.get("author", "Organization Admin"),  # Default to "Anonymous" if no author
+            "timestamp": reply.get("timestamp", "Unknown"),  # Default to "Unknown" if no timestamp
+        })
+
+    return jsonify({"replies": reply_list}), 200
+    
 if __name__ == '__main__':
     app.run(debug=True)

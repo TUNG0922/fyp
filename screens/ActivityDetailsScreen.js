@@ -31,7 +31,12 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
       const data = await response.json();
   
       if (response.ok) {
-        setReviews(data.reviews);
+        const reviewsWithReplies = await Promise.all(data.reviews.map(async (review) => {
+          const repliesResponse = await fetch(`http://10.0.2.2:5000/api/get_replies?reviewId=${review._id}`);
+          const repliesData = await repliesResponse.json();
+          return { ...review, replies: repliesData.replies };
+        }));
+        setReviews(reviewsWithReplies);
       } else {
         setError(data.error || 'Failed to load reviews');
       }
@@ -40,7 +45,7 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
   const handleReplyPress = (reviewId) => {
     setCurrentReviewId(reviewId);
@@ -53,24 +58,25 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
       return;
     }
     try {
-      const response = await fetch(`http://10.0.2.2:5000/api/reply_to_review`, {
+      const response = await fetch('http://10.0.2.2:5000/api/reply_to_review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewId: currentReviewId, replyText })
+        body: JSON.stringify({ reviewId: currentReviewId, replyText: replyText.trim() }),
       });
+  
       const data = await response.json();
-
       if (response.ok) {
+        Alert.alert('Success', 'Reply submitted successfully');
         setReplyModalVisible(false);
         setReplyText('');
-        fetchReviews(); // Refresh reviews
+        fetchReviews(); // Refresh reviews after adding a reply
       } else {
         Alert.alert('Error', data.error || 'Failed to submit reply');
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to submit reply');
     }
-  };
+  };  
 
   const handleEditPress = () => {
     setEditModalVisible(true);
@@ -118,31 +124,50 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
   };  
 
   const handleViewChatPress = () => {
-    Alert.alert("View Chat", "This button will navigate to the chat section for this activity.");
+    // Navigate to the chat screen and pass the necessary parameters
+    navigation.navigate('ViewChat', {
+      activity: activity, // Pass the entire activity object
+      userId: userId, // Pass userId
+      username: username, // Pass username
+    });
   };
 
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>
       <View style={styles.ratingContainer}>
-        <Rating
-          type='star'
-          startingValue={item.rating}
-          readonly
-          imageSize={20}
-          style={styles.rating}
+        <Rating 
+          type="star" 
+          startingValue={item.rating} 
+          readonly 
+          imageSize={20} 
+          style={styles.rating} 
         />
       </View>
       <View style={styles.commentContainer}>
         <Text style={styles.reviewText}>{item.text}</Text>
-        <Text style={styles.reviewAuthor}>- {item.user_name}</Text>
+        <Text style={styles.reviewAuthor}>{item.name}</Text>
       </View>
-      <TouchableOpacity style={styles.button} onPress={() => handleReplyPress(item._id)}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => {
+          setCurrentReviewId(item._id);
+          setReplyModalVisible(true);
+        }}
+      >
         <Text style={styles.buttonText}>Reply</Text>
       </TouchableOpacity>
+  
+      {/* Display replies under each review */}
       {item.replies && item.replies.length > 0 && (
         <View style={styles.repliesContainer}>
           {item.replies.map((reply, index) => (
-            <Text key={index} style={styles.replyText}>Reply: {reply}</Text>
+            <View key={index} style={styles.replyItem}>
+              <Text style={styles.replyAuthor}>{reply.author}:</Text>
+              <Text style={styles.replyText}>{reply.text}</Text>
+              <Text style={styles.replyTimestamp}>
+                {new Date(reply.timestamp).toLocaleString()}
+              </Text>
+            </View>
           ))}
         </View>
       )}
@@ -204,27 +229,22 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
       />
-      <Modal
-        visible={replyModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setReplyModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
+      <Modal visible={replyModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Reply to Review</Text>
             <TextInput
-              style={styles.textInput}
-              placeholder="Write your reply..."
-              multiline
+              style={styles.modalInput}
+              placeholder="Enter your reply..."
               value={replyText}
               onChangeText={setReplyText}
+              multiline={true}
             />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.button} onPress={handleReplySubmit}>
-                <Text style={styles.buttonText}>Submit Reply</Text>
+            <View style={styles.modalButtonsContainer}>
+              <TouchableOpacity style={styles.submitButton} onPress={handleReplySubmit}>
+                <Text style={styles.buttonText}>Submit</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => setReplyModalVisible(false)}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setReplyModalVisible(false)}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -238,39 +258,39 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
         animationType="slide"
         onRequestClose={() => setEditModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
+        <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Activity</Text>
             <TextInput
-              style={styles.textInput}
+              style={styles.modalInput}
               placeholder="Activity Name"
               value={editedActivity.name}
               onChangeText={(text) => setEditedActivity({ ...editedActivity, name: text })}
             />
             <TextInput
-              style={styles.textInput}
+              style={styles.modalInput}
               placeholder="Location"
               value={editedActivity.location}
               onChangeText={(text) => setEditedActivity({ ...editedActivity, location: text })}
             />
             <TextInput
-              style={styles.textInput}
+              style={styles.modalInput}
               placeholder="Date"
               value={editedActivity.date}
               onChangeText={(text) => setEditedActivity({ ...editedActivity, date: text })}
             />
             <TextInput
-              style={styles.textInput}
+              style={[styles.modalInput, styles.descriptionInput]}
               placeholder="Description"
               value={editedActivity.description}
               onChangeText={(text) => setEditedActivity({ ...editedActivity, description: text })}
               multiline
             />
             <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.button} onPress={handleEditSubmit}>
+              <TouchableOpacity style={styles.saveButton} onPress={handleEditSubmit}>
                 <Text style={styles.buttonText}>Save Changes</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => setEditModalVisible(false)}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -361,6 +381,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'red',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black overlay
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -368,15 +394,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
+    width: '90%',
+    backgroundColor: '#fff', // White background
+    borderRadius: 10,
     padding: 20,
-    borderRadius: 8,
-    width: '80%',
+    alignItems: 'center',
+    elevation: 5, // Shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
+    color: '#333',
   },
   textInput: {
     height: 40,
@@ -389,6 +422,61 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  repliesContainer: {
+    paddingLeft: 20,
+    marginTop: 5,
+  },
+  replyText: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
+  },
+  modalInput: {
+    width: '100%',
+    height: 100,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    textAlignVertical: 'top',
+    fontSize: 16,
+    marginBottom: 15,
+  },
+  modalButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  submitButton: {
+    backgroundColor: '#4CAF50', // Green color for submit
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 10,
+    flex: 1,
+  },
+  cancelButton: {
+    backgroundColor: '#F44336', // Red color for cancel
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    flex: 1,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#4CAF50', // Green for Save
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 10,
   },
 });
 

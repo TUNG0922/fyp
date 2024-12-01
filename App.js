@@ -10,12 +10,14 @@ import DashboardScreenVolunteer from './screens/DashboardScreenVolunteer';
 import DashboardScreenPlatformAdmin from './screens/DashboardScreenPlatformAdmin';
 import DashboardScreenOrganizationAdmin from './screens/DashboardScreenOrganizationAdmin';
 import ActivityDetailsVolunteer from './screens/ActivityDetailsVolunteer';
-import ActivityDetailsScreen from './screens/ActivityDetailsScreen'; 
-import NotificationVolunteer from './screens/NotificationVolunteer'; 
-import EditProfileVolunteer from './screens/EditProfileVolunteer'; 
-import EditProfileOrganizationAdmin from './screens/EditProfileOrganizationAdmin';  // Import the new EditProfileOrganizationAdmin screen
-import ChatActivity from './screens/ChatActivity'; // Import the ChatActivity screen
-import ViewList from './screens/ViewList';  // Import the new ViewList screen
+import ActivityDetailsScreen from './screens/ActivityDetailsScreen';
+import NotificationVolunteer from './screens/NotificationVolunteer';
+import EditProfileVolunteer from './screens/EditProfileVolunteer';
+import EditProfileOrganizationAdmin from './screens/EditProfileOrganizationAdmin';
+import ChatActivity from './screens/ChatActivity';
+import ViewList from './screens/ViewList';
+import ViewChat from './screens/ViewChat';
+import Chatbox from './screens/Chatbox'; // Register Chatbox.js
 
 const Stack = createStackNavigator();
 
@@ -50,9 +52,9 @@ export default function App() {
           headerTitleStyle: {
             fontWeight: 'bold',
           },
-          headerLeft: () => null, // Removes the back button
         }}
       >
+        {/* Authentication Screens */}
         <Stack.Screen
           name="SignIn"
           component={SignInScreen}
@@ -63,80 +65,100 @@ export default function App() {
           component={SignUpScreen}
           options={{ headerShown: false }}
         />
+
+        {/* Dashboard Screens */}
         <Stack.Screen
           name="DashboardVolunteer"
           component={DashboardScreenVolunteer}
-          options={{ 
+          options={{
             headerTitle: () => <LogoTitle />,
           }}
         />
         <Stack.Screen
           name="DashboardPlatformAdmin"
           component={DashboardScreenPlatformAdmin}
-          options={{ 
+          options={{
             headerTitle: () => <LogoTitle />,
           }}
         />
         <Stack.Screen
           name="DashboardOrganizationAdmin"
           component={DashboardScreenOrganizationAdmin}
-          options={{ 
+          options={{
             headerTitle: () => <LogoTitle />,
           }}
         />
+
+        {/* Activity Screens */}
         <Stack.Screen
           name="ActivityDetailsVolunteer"
           component={ActivityDetailsVolunteer}
-          options={{ 
+          options={{
             headerTitle: 'Activity Details',
-            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
         <Stack.Screen
           name="ActivityDetailsScreen"
           component={ActivityDetailsScreen}
-          options={{ 
+          options={{
             headerTitle: 'Activity Details',
-            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
+
+        {/* Notification Screens */}
         <Stack.Screen
           name="NotificationVolunteer"
           component={NotificationVolunteer}
-          options={{ 
+          options={{
             headerTitle: 'Notifications',
           }}
         />
+
+        {/* Profile Screens */}
         <Stack.Screen
           name="EditProfileVolunteer"
           component={EditProfileVolunteer}
-          options={{ 
+          options={{
             headerTitle: 'Edit Profile',
-            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
         <Stack.Screen
-          name="EditProfileOrganizationAdmin"  // Add EditProfileOrganizationAdmin here
+          name="EditProfileOrganizationAdmin"
           component={EditProfileOrganizationAdmin}
           options={{
             headerTitle: 'Edit Profile',
-            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
+
+        {/* Chat Screens */}
         <Stack.Screen
-          name="ChatActivity"  // Add the ChatActivity screen here
+          name="ChatActivity"
           component={ChatActivity}
           options={{
             headerTitle: 'Chat',
-            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
         <Stack.Screen
-          name="ViewList"  // Add the ViewList screen here
+          name="ViewChat"
+          component={ViewChat}
+          options={{
+            headerTitle: 'Chat',
+          }}
+        />
+        <Stack.Screen
+          name="Chatbox"
+          component={Chatbox}
+          options={({ route }) => ({
+            headerTitle: route.params?.name || 'Chatbox', // Use the name from route.params, default to 'Chatbox'
+          })}
+        />
+
+        {/* Additional Screens */}
+        <Stack.Screen
+          name="ViewList"
           component={ViewList}
           options={{
             headerTitle: 'View List',
-            headerLeft: () => null, // Ensures the back button is removed
           }}
         />
       </Stack.Navigator>

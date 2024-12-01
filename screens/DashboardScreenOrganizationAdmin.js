@@ -141,7 +141,7 @@ const HomeScreen = ({ route }) => {
 };
 
 const DiscoverScreen = ({ route, navigation }) => {
-  const { username, userId } = route.params; // Passed from previous screen
+  const { username, userId } = route.params; // Passed from the previous screen
   const [isFormVisible, setFormVisible] = useState(false);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -149,7 +149,9 @@ const DiscoverScreen = ({ route, navigation }) => {
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   // Fetch activities specific to Organization Admin
   const fetchActivities = async () => {
@@ -157,9 +159,9 @@ const DiscoverScreen = ({ route, navigation }) => {
     try {
       const response = await fetch(`http://10.0.2.2:5000/api/activities?userId=${userId}`);
       const data = await response.json();
-      console.log("Fetched Data:", data); // Check the fetched data here
       if (response.ok) {
         setActivities(data);
+        setFilteredActivities(data); // Initialize filtered list
       } else {
         Alert.alert('Error', data.error || 'Failed to fetch activities');
       }
@@ -169,34 +171,24 @@ const DiscoverScreen = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  };  
+  };
 
   useEffect(() => {
     fetchActivities();
   }, []);
 
-  // Handle image picker
-  const handleImagePicker = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.granted === false) {
-        Alert.alert("Permission Required", "You need to grant permission to access your photos.");
-        return;
-      }
-
-      let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setImageUri(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Image picker error:', error);
-      Alert.alert('Error', 'Failed to pick an image');
+  // Handle search text input
+  const handleSearch = (text) => {
+    setSearchText(text);
+    if (text.trim() === '') {
+      setFilteredActivities(activities); // Reset to all activities when search is cleared
+    } else {
+      const filtered = activities.filter((activity) =>
+        activity.name.toLowerCase().includes(text.toLowerCase()) ||
+        activity.location.toLowerCase().includes(text.toLowerCase()) ||
+        activity.date.toLowerCase().includes(text.toLowerCase())
+      );
+      setFilteredActivities(filtered);
     }
   };
 
@@ -267,7 +259,7 @@ const DiscoverScreen = ({ route, navigation }) => {
     navigation.navigate('ActivityDetailsScreen', {
       activity,
       userId,
-      username
+      username,
     });
   };
 
@@ -293,16 +285,26 @@ const DiscoverScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.screenContainer}>
+      {/* Search Bar */}
+      <View style={styles.searchBarContainer}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search by name, location, or date..."
+          value={searchText}
+          onChangeText={handleSearch}
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#00BFAE" />
       ) : (
         <FlatList
-          data={activities}
+          data={filteredActivities}
           renderItem={renderActivityItem}
           keyExtractor={(item) => item._id}
         />
       )}
-  
+
       {/* Floating Button to Open the Form */}
       {!isFormVisible && (
         <TouchableOpacity
@@ -312,10 +314,9 @@ const DiscoverScreen = ({ route, navigation }) => {
           <Text style={styles.addButtonText}>Add Activity</Text>
         </TouchableOpacity>
       )}
-  
+
       {isFormVisible && (
         <ScrollView style={styles.formContainer}>
-          {imageUri && <Image source={{ uri: imageUri }} style={styles.selectedImage} />}
           <Text style={styles.formLabel}>Activity Name</Text>
           <TextInput
             style={styles.input}
@@ -344,23 +345,20 @@ const DiscoverScreen = ({ route, navigation }) => {
             value={description}
             onChangeText={setDescription}
           />
-          <TouchableOpacity style={styles.imagePickerButton} onPress={handleImagePicker}>
-            <Text style={styles.imagePickerButtonText}>Pick an image</Text>
-          </TouchableOpacity>
           <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
-                </ScrollView>
-              )}
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
+
 
 // ProfileScreen component with Logout button
 const ProfileScreen = ({ route, navigation }) => {
@@ -460,6 +458,16 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   
+  searchBar: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    margin: 10,
+    paddingHorizontal: 10,
+    backgroundColor: '#f9f9f9',
+  },
+
   // Text styles
   screenText: {
     fontSize: 24,
