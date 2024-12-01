@@ -9,10 +9,9 @@ const ActivityDetailsVolunteer = () => {
 
   const { activity, userId, name, email, image, role = 'Volunteer' } = route.params || {};
 
-  console.log('Name passed in:', name);
-
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
+  const [replies, setReplies] = useState({});  // State to store replies by review ID
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,6 +38,18 @@ const ActivityDetailsVolunteer = () => {
         } else {
           Alert.alert('Error', fetchReviewsResult.message || 'Error fetching reviews.');
         }
+
+        // Fetch replies for each review
+        const repliesData = {};
+        for (const review of fetchReviewsResult.reviews) {
+          const repliesResponse = await fetch(`http://10.0.2.2:5000/api/get_replies?reviewId=${review._id}`);
+          const repliesResult = await repliesResponse.json();
+          if (repliesResponse.ok) {
+            repliesData[review._id] = repliesResult.replies;
+          }
+        }
+        setReplies(repliesData);
+
       } catch (error) {
         Alert.alert('Error', 'Network error. Please try again later.');
       } finally {
@@ -111,10 +122,12 @@ const ActivityDetailsVolunteer = () => {
         body: JSON.stringify(joinActivityData),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
+        setHasJoined(true);  // Update join status immediately after success
         Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
       } else {
-        const result = await response.json();
         Alert.alert('Error', result.message || 'Failed to join the activity.');
       }
     } catch (error) {
@@ -122,53 +135,49 @@ const ActivityDetailsVolunteer = () => {
     }
   };
 
-  const handleDeleteReview = async (reviewId) => {
-    try {
-      const response = await fetch(`http://10.0.2.2:5000/api/delete_review/${reviewId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-  
-      if (response.ok) {
-        setReviews((prevReviews) => prevReviews.filter((review) => review._id !== reviewId));
-        Alert.alert('Success', 'Review deleted successfully.');
-      } else {
-        const result = await response.json();
-        Alert.alert('Error', result.message || 'Failed to delete review.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'An error occurred while deleting the review.');
-    }
-  };  
-
   const goToChat = () => {
-    // Now the 'name' variable is passed to the ChatActivity screen
     navigation.navigate('ChatActivity', {
       activityId: activity._id,
       userId: userId,
-      name: name,  // Pass 'name' correctly here
-      role: role,  // Pass 'role' here as well
+      name: name,
+      role: role,
     });
   };
 
-  const renderReview = ({ item }) => (
-    <View style={styles.reviewItem}>
-      <Text style={styles.reviewText}>{item.text}</Text>
-      <Text style={styles.reviewDate}>{item.date}</Text>
-      <Text style={styles.reviewAuthor}>{item.name}</Text>
-      <AirbnbRating
-        size={20}
-        isDisabled
-        showRating={false}
-        defaultRating={item.rating}
-        starContainerStyle={styles.ratingStars}
-      />
-  
-      <TouchableOpacity onPress={() => handleDeleteReview(item._id)} style={styles.deleteButton}>
-        <Text style={styles.deleteButtonText}>Delete Review</Text>
-      </TouchableOpacity>
-    </View>
-  );  
+  const renderReview = ({ item }) => {
+    const reviewReplies = replies[item._id] || [];
+
+    return (
+      <View style={styles.reviewItem}>
+        <Text style={styles.reviewText}>{item.text}</Text>
+        <Text style={styles.reviewDate}>{item.date}</Text>
+        <Text style={styles.reviewAuthor}>{item.name}</Text>
+        <AirbnbRating
+          size={20}
+          isDisabled
+          showRating={false}
+          defaultRating={item.rating}
+          starContainerStyle={styles.ratingStars}
+        />
+    
+        <TouchableOpacity onPress={() => handleDeleteReview(item._id)} style={styles.deleteButton}>
+          <Text style={styles.deleteButtonText}>Delete Review</Text>
+        </TouchableOpacity>
+
+        {/* Render replies */}
+        {reviewReplies.length > 0 && (
+          <View style={styles.repliesContainer}>
+            {reviewReplies.map((reply) => (
+              <View key={reply.replyId} style={styles.replyItem}>
+                <Text style={styles.replyAuthor}>{reply.author}</Text>
+                <Text style={styles.replyText}>{reply.text}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -322,6 +331,20 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: '#fff',
     fontSize: 14,
+  },
+  repliesContainer: {
+    marginTop: 10,
+    paddingLeft: 20,
+  },
+  replyItem: {
+    marginBottom: 5,
+  },
+  replyAuthor: {
+    fontWeight: 'bold',
+  },
+  replyText: {
+    fontSize: 14,
+    color: '#555',
   },
 });
 

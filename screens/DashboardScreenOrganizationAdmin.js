@@ -234,6 +234,19 @@ const DiscoverScreen = ({ route, navigation }) => {
     setFormVisible(false);
   };
 
+  // Select an image using the ImagePicker
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);  // Save the image URI
+    }
+  };
+
   // Delete an activity
   const handleDelete = async (id) => {
     try {
@@ -315,7 +328,7 @@ const DiscoverScreen = ({ route, navigation }) => {
         </TouchableOpacity>
       )}
 
-      {isFormVisible && (
+{isFormVisible && (
         <ScrollView style={styles.formContainer}>
           <Text style={styles.formLabel}>Activity Name</Text>
           <TextInput
@@ -345,6 +358,18 @@ const DiscoverScreen = ({ route, navigation }) => {
             value={description}
             onChangeText={setDescription}
           />
+          
+          {/* Image Picker Button */}
+          <TouchableOpacity onPress={handlePickImage} style={styles.imagePickerButton}>
+            <Text style={styles.imagePickerButtonText}>Pick an Image</Text>
+          </TouchableOpacity>
+
+          {/* Display Image Preview if selected */}
+          {imageUri && (
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+          )}
+
+          {/* Cancel and Submit Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
               <Text style={styles.cancelButtonText}>Cancel</Text>

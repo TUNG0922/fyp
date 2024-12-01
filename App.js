@@ -1,3 +1,4 @@
+// App.js
 import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -18,6 +19,7 @@ import ChatActivity from './screens/ChatActivity';
 import ViewList from './screens/ViewList';
 import ViewChat from './screens/ViewChat';
 import Chatbox from './screens/Chatbox'; // Register Chatbox.js
+import VolunteerHistory from './screens/VolunteerHistory'; // Register VolunteerHistory.js
 
 const Stack = createStackNavigator();
 
@@ -159,6 +161,15 @@ export default function App() {
           component={ViewList}
           options={{
             headerTitle: 'View List',
+          }}
+        />
+
+        {/* Volunteer History Screen */}
+        <Stack.Screen
+          name="VolunteerHistory"
+          component={VolunteerHistory}
+          options={{
+            headerTitle: 'Volunteer History',
           }}
         />
       </Stack.Navigator>
