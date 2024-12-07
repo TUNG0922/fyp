@@ -357,23 +357,32 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
   const navigation = useNavigation();
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Logout Confirmation',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes', onPress: async () => {
-            try {
-              await AsyncStorage.multiRemove(['userId', 'username', 'password', 'role']);
-              navigation.reset({ index: 0, routes: [{ name: 'SignIn' }] });
-            } catch (error) {
-              console.error('Failed to logout:', error);
-              Alert.alert('Logout Failed', 'Could not log out. Please try again.');
-            }
-        }},
-      ]
-    );
-  };  
+  Alert.alert(
+    'Logout Confirmation',
+    'Are you sure you want to log out?',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Yes', 
+        onPress: async () => {
+          try {
+            // Clear any stored user data
+            await AsyncStorage.clear();
+            
+            // Navigate to the SignInScreen
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'SignIn' }],
+            });
+          } catch (error) {
+            console.error('Error during logout:', error);
+            Alert.alert('Error', 'An error occurred while logging out. Please try again.');
+          }
+        }
+      }
+    ]
+  );
+};
 
   return (
     <View style={styles.container}>
