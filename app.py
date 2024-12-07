@@ -512,45 +512,58 @@ def edit_activity():
 @app.route('/api/accept_activity', methods=['POST'])
 def accept_activity():
     try:
-        # Log the raw data received for debugging
-        print("Raw data received:", request.data)
-        
-        # Access the JSON payload directly
-        data = request.json  # This is equivalent to request.get_json()
-        print("Parsed JSON data:", data)  # Log the parsed data
-
-        # Retrieve the join_activity_id from the request
+        # Access JSON payload
+        data = request.json
         join_activity_id = data.get("join_activity_id")
-        
-        # Validate join_activity_id presence and format
+
         if not join_activity_id:
             return jsonify({"error": "Activity ID is required"}), 400
 
-        # Attempt to create ObjectId (this will fail if join_activity_id is not valid)
+        # Validate ObjectId
         try:
             object_id = ObjectId(join_activity_id)
         except Exception as e:
-            print("Invalid ObjectId:", e)
             return jsonify({"error": "Invalid Activity ID format"}), 400
 
-        # Access the join_activity collection and find the document by _id
+        # Find the activity in the join_activity collection
         activity = join_activity_collection.find_one({"_id": object_id})
-        
         if not activity:
             return jsonify({"error": "Activity not found"}), 404
 
-        # Move activity to the completed collection
+        # Move the activity to the completed collection
         completed_joined_activity_collection.insert_one(activity)
 
         # Remove the activity from the join_activity collection
         join_activity_collection.delete_one({"_id": object_id})
 
-        # Return success response
-        return jsonify({"message": "Activity moved to completed"}), 200
+        # Extract details for notifications
+        user_id = activity.get("user_id")
+        activity_name = activity.get("activity_name", "Unnamed Activity")
+        activity_user_id = activity.get("activity_user_id")  # Updated field name
+        user_name = activity.get("username", "Unknown User")
+
+        # Save notification for activity admin
+        activity_admin_notification = {
+            "user_id": activity_user_id,  # Updated field name
+            "message": f"You have accepted {user_name} for the activity: {activity_name}",
+            "activity_id": join_activity_id,
+            "timestamp": datetime.utcnow()
+        }
+        notifications_organizationadmin_collection.insert_one(activity_admin_notification)
+
+        # Save notification for the user
+        user_notification = {
+            "user_id": user_id,
+            "message": f"You have been accepted for joining the activity: {activity_name}",
+            "activity_id": join_activity_id,
+            "timestamp": datetime.utcnow()
+        }
+        notifications_collection.insert_one(user_notification)
+
+        return jsonify({"message": "Activity moved to completed and notifications created"}), 200
 
     except Exception as e:
-        print("Error in accept_activity:", e)
-        return jsonify({"error": "An error occurred"}), 500
+        return jsonify({"error": str(e)}), 500
     
 @app.route('/api/completed_joined_activity', methods=['GET'])
 def get_completed_activities():
@@ -578,17 +591,27 @@ def get_completed_activities():
 @app.route('/api/complete_activity/<activity_id>', methods=['POST'])
 def complete_activity(activity_id):
     try:
+        # Fetch the activity from the completed_joined_activity collection
         activity = completed_joined_activity_collection.find_one({"_id": ObjectId(activity_id)})
         if not activity:
             return jsonify({"error": "Activity not found"}), 404
-        
+
         # Insert the activity into the past_activity collection
         past_activity_collection.insert_one(activity)
-        
+
         # Remove the activity from completed_joined_activity
         completed_joined_activity_collection.delete_one({"_id": ObjectId(activity_id)})
-        
-        return jsonify({"message": "Activity moved to past_activity successfully"}), 200
+
+        # Add a notification for the user
+        notification = {
+            "user_id": activity.get("user_id"),  # Assuming `user_id` is part of the activity document
+            "activity_id": activity_id,
+            "message": f"You have completed the activity: {activity.get('activity_name', 'Unnamed Activity')}",
+            "timestamp": datetime.utcnow()
+        }
+        notifications_collection.insert_one(notification)
+
+        return jsonify({"message": "Activity moved to past_activity successfully and notification created"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
