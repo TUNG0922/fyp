@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, Alert, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signIn } from '../api/auth'; // Import the signIn function
 
@@ -16,17 +15,17 @@ const SignInScreen = ({ navigation }) => {
     try {
       const data = await signIn(email, password, role);
       console.log('Sign-in response:', data); // Check the response structure
-  
+
       if (data && data.message === 'Sign-in successful') {
         const userId = data.userId; // This should now contain the userId
         const username = data.username || 'LOG'; // Use the username or default to 'LOG'
-        
+
         if (userId) {
           await AsyncStorage.setItem('userId', userId); // Store userId
           await AsyncStorage.setItem('username', username); // Store username
           await AsyncStorage.setItem('password', password); // Store password
           await AsyncStorage.setItem('email', email); // Store email
-          
+
           // Pass the role to the corresponding dashboard based on the selected role
           if (role === 'Volunteer') {
             navigation.navigate('DashboardVolunteer', { userId, username, password, email, role });
@@ -95,15 +94,6 @@ const SignInScreen = ({ navigation }) => {
         disabled={loading}
       />
       {loading && <ActivityIndicator size="large" color="#547DBE" style={styles.loader} />}
-      <Text style={styles.orText}>or sign in with</Text>
-      <View style={styles.iconContainer}>
-        <TouchableOpacity style={styles.iconButton} accessibilityLabel="Sign in with Google">
-          <Icon name="google" size={24} color="#DD4B39" style={styles.icon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} accessibilityLabel="Sign in with Facebook">
-          <Icon name="facebook" size={24} color="#3B5998" style={styles.icon} />
-        </TouchableOpacity>
-      </View>
       <View style={styles.signUpContainer}>
         <Text style={styles.signUpText}>Don't have an account?</Text>
         <TouchableOpacity onPress={handleSignUp}>
@@ -161,36 +151,6 @@ const styles = StyleSheet.create({
   picker: {
     height: '100%',
     width: '100%',
-  },
-  orText: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#333',
-    marginVertical: 16,
-  },
-  iconContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  iconButton: {
-    width: 60,
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  icon: {
-    textAlign: 'center',
   },
   signUpContainer: {
     flexDirection: 'row',

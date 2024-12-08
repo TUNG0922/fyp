@@ -647,6 +647,7 @@ def send_message():
     message = {
         'userId': data['userId'],
         'activityId': data['activityId'],
+        'activity_user_id': data.get('activity_user_id'),  # Include the activity_user_id
         'message': data['message'],
         'name': data['name'],
         'role': data['role'],
@@ -666,8 +667,13 @@ def send_message():
 @app.route('/api/getMessages/<activity_id>/<user_id>', methods=['GET'])
 def get_messages(activity_id, user_id):
     try:
+        # Log the received parameters for debugging
+        print(f"Received activity_id: {activity_id}")
+        print(f"Received user_id: {user_id}")
+
         # Validate the activityId and userId
         if not activity_id or not user_id:
+            print("Error: activity_id or user_id is missing")
             return jsonify({'error': 'activityId and userId are required'}), 400
 
         # Query the messages collection to find messages based on activityId and userId
@@ -676,6 +682,7 @@ def get_messages(activity_id, user_id):
         # Convert MongoDB cursor to list and format data for the frontend
         messages_list = []
         for msg in messages:
+            print(f"Processing message: {msg}")  # Log each message for debugging
             messages_list.append({
                 '_id': str(msg['_id']),  # Convert ObjectId to string
                 'userId': msg.get('userId', ''),
@@ -686,10 +693,14 @@ def get_messages(activity_id, user_id):
                 'createdAt': str(msg.get('createdAt', ''))  # Convert to string for frontend
             })
 
+        # Log the final list to verify the processed messages
+        print("Final messages list:", messages_list)
+
         # Return the messages as a JSON response
         return jsonify(messages_list), 200
 
     except Exception as e:
+        # Log any exception that occurs
         print(f"Error in get_messages: {e}")
         return jsonify({'error': f"An error occurred: {str(e)}"}), 500
     

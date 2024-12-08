@@ -53,51 +53,55 @@ const Chatbox = ({ route }) => {
     }
   };
 
-  // Handle sending a new message
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) {
-      Alert.alert('Message required', 'Please enter a message before sending.');
-      return;
-    }
+ // Handle sending a new message
+const handleSendMessage = async () => {
+  if (!newMessage.trim()) {
+    Alert.alert('Message required', 'Please enter a message before sending.');
+    return;
+  }
 
-    setSending(true);
-    const messageData = {
-      userId,
-      activityId,
-      message: newMessage,
-      name,
-      role,
-      createdAt: new Date().toISOString(),
-    };
+  setSending(true);
 
-    try {
-      const response = await fetch('http://10.0.2.2:5000/api/sendMessage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(messageData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { ...messageData, createdAt: new Date().toISOString() },
-        ]);
-        setNewMessage(''); // Clear the input field
-        flatListRef.current.scrollToEnd({ animated: true });
-      } else {
-        setError(data.error || 'Failed to send message');
-        Alert.alert('Error', data.error || 'Failed to send message');
-      }
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError('Error sending message');
-      Alert.alert('Error', 'An error occurred while sending the message');
-    } finally {
-      setSending(false);
-    }
+  // Set the default role explicitly
+  const messageData = {
+    userId,
+    activityId,
+    message: newMessage,
+    name,
+    role: 'Organization Admin', // Explicitly set the role as a default
+    createdAt: new Date().toISOString(),
   };
+
+  console.log('Sending message data to server:', messageData); // Log the payload
+
+  try {
+    const response = await fetch('http://10.0.2.2:5000/api/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(messageData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { ...messageData, createdAt: new Date().toISOString() },
+      ]);
+      setNewMessage(''); // Clear the input field
+      flatListRef.current.scrollToEnd({ animated: true });
+    } else {
+      setError(data.error || 'Failed to send message');
+      Alert.alert('Error', data.error || 'Failed to send message');
+    }
+  } catch (err) {
+    console.error('Error sending message:', err);
+    setError('Error sending message');
+    Alert.alert('Error', 'An error occurred while sending the message');
+  } finally {
+    setSending(false);
+  }
+};
 
   // Rendering each message
   const renderMessage = ({ item }) => {

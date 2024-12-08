@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker'; // Import Picker component
-import { signUp } from '../api/auth'; // Adjust the import path as needed
-import Icon from 'react-native-vector-icons/FontAwesome'; // Import icons
 
 const SignUpScreen = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -87,18 +85,6 @@ const SignUpScreen = ({ navigation }) => {
       </View>
       <Button title="Sign Up" onPress={handleSignUp} color="#547DBE" />
 
-      <Text style={styles.orText}>Or sign up with</Text>
-
-      {/* Google and Facebook Icons */}
-      <View style={styles.iconContainer}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => Alert.alert('Google Sign Up')}>
-          <Icon name="google" size={30} color="#DB4437" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton} onPress={() => Alert.alert('Facebook Sign Up')}>
-          <Icon name="facebook" size={30} color="#3b5998" />
-        </TouchableOpacity>
-      </View>
-
       {/* "Have an account? SIGN IN" text */}
       <View style={styles.signInContainer}>
         <Text style={styles.signInText}>Have an account?</Text>
@@ -151,33 +137,6 @@ const styles = StyleSheet.create({
   picker: {
     height: '100%', // Full height of the container
     width: '100%',
-  },
-  orText: {
-    marginTop: 16,
-    textAlign: 'center',
-    color: '#333',
-    fontSize: 16, // Font size
-  },
-  iconContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  iconButton: {
-    marginHorizontal: 16,
-    width: 60, // Fixed width for square
-    height: 60, // Fixed height for square
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12, // Rounded corners (optional)
-    borderWidth: 1,
-    borderColor: '#ccc', // Border color
-    backgroundColor: '#fff', // Background color
-    elevation: 3, // Adds shadow for Android
-    shadowColor: '#000', // Shadow color for iOS
-    shadowOffset: { width: 0, height: 2 }, // Shadow offset for iOS
-    shadowOpacity: 0.1, // Shadow opacity for iOS
-    shadowRadius: 2, // Shadow blur radius for iOS
   },
   signInContainer: {
     flexDirection: 'row',

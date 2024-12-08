@@ -302,50 +302,73 @@ const DiscoverScreen = ({ username, userId, email, role }) => {
           style={styles.searchInput}
           placeholder="Search activities..."
           value={searchQuery}
-          onChangeText={handleSearch} // Update search query on input change
+          onChangeText={(text) => {
+            console.log('Search Query Changed:', text); // Logs the new search query
+            handleSearch(text);
+          }}
         />
       </View>
-
+  
       {loading ? (
         <ActivityIndicator size="large" color="#547DBE" />
       ) : (
         <FlatList
           data={filteredActivities}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) => (
-            <View style={styles.activityCard}>
-              <Image
-                source={{ uri: item.imageUri }}
-                style={styles.activityImage}
-                onError={() => console.log('Error loading image:', item.imageUri)}
-                resizeMode="cover"
-              />
-              <Text style={styles.activityName}>{item.name}</Text>
-              <Text>{item.date}</Text>
-              <Text>{item.location}</Text>
-              <View style={styles.buttonContainer}>
+          keyExtractor={(item) => {
+            console.log('Key Extractor for Item:', item._id); // Logs each item's _id
+            return item._id;
+          }}
+          renderItem={({ item }) => {
+            console.log('Rendering Item:', item); // Logs the item being rendered
+            return (
+              <View style={styles.activityCard}>
+                <Image
+                  source={{ uri: item.imageUri }}
+                  style={styles.activityImage}
+                  onError={(e) => console.log('Error loading image:', item.imageUri, e.nativeEvent.error)}
+                  resizeMode="cover"
+                />
+                <Text style={styles.activityName}>{item.name}</Text>
+                <Text>{item.date}</Text>
+                <Text>{item.location}</Text>
+                <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.button}
-                  onPress={() => navigation.navigate('ActivityDetailsVolunteer', {
-                    activity: item,
-                    userId: userId,
-                    name: username,
-                    email: email,
-                    image: item.imageUri,
-                    role: role,
-                  })}
+                  onPress={() => {
+                    const activityUserId = item.userId; // Extract userId from the activity object
+                    console.log('Navigating to ActivityDetailsVolunteer with:', {
+                      activity: item,
+                      userId: activityUserId, // Use the activity's userId
+                      name: username,
+                      email: email,
+                      image: item.imageUri,
+                      role: role,
+                    });
+                    navigation.navigate('ActivityDetailsVolunteer', {
+                      activity: item,
+                      userId: activityUserId, // Pass the activity's userId here
+                      name: username,
+                      email: email,
+                      image: item.imageUri,
+                      role: role,
+                    });
+                  }}
                 >
                   <Text style={styles.buttonText}>Details</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.shareButton]}
-                  onPress={() => handleShare(item)}
-                >
-                  <Text style={styles.buttonText}>Share</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.shareButton]}
+                    onPress={() => {
+                      console.log('Sharing Item:', item); // Logs the item being shared
+                      handleShare(item);
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Share</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
+            );
+          }}
         />
       )}
     </View>
