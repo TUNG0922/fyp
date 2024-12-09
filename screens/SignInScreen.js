@@ -84,7 +84,6 @@ const SignInScreen = ({ navigation }) => {
         >
           <Picker.Item label="Volunteer" value="Volunteer" />
           <Picker.Item label="Organization Admin" value="Organization Admin" />
-          <Picker.Item label="Platform Admin" value="Platform Admin" />
         </Picker>
       </View>
       <Button 

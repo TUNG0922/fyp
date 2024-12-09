@@ -80,7 +80,6 @@ const SignUpScreen = ({ navigation }) => {
         >
           <Picker.Item label="Volunteer" value="Volunteer" />
           <Picker.Item label="Organization Admin" value="Organization Admin" />
-          <Picker.Item label="Platform Admin" value="Platform Admin" />
         </Picker>
       </View>
       <Button title="Sign Up" onPress={handleSignUp} color="#547DBE" />

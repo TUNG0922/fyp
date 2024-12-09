@@ -20,6 +20,7 @@ import ViewList from './screens/ViewList';
 import ViewChat from './screens/ViewChat';
 import Chatbox from './screens/Chatbox'; // Register Chatbox.js
 import VolunteerHistory from './screens/VolunteerHistory'; // Register VolunteerHistory.js
+import ViewReport from './screens/ViewReport';
 
 const Stack = createStackNavigator();
 
@@ -108,7 +109,13 @@ export default function App() {
             headerTitle: 'Activity Details',
           }}
         />
-
+        <Stack.Screen
+                  name="ViewReport"
+                  component={ViewReport} // Register the new ViewReport screen
+                  options={{
+                    headerTitle: 'View Report',
+                  }}
+                />
         {/* Notification Screens */}
         <Stack.Screen
           name="NotificationVolunteer"

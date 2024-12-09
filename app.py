@@ -606,16 +606,29 @@ def complete_activity(activity_id):
         # Remove the activity from completed_joined_activity
         completed_joined_activity_collection.delete_one({"_id": ObjectId(activity_id)})
 
-        # Add a notification for the user
-        notification = {
+        # Notification for the user
+        user_notification = {
             "user_id": activity.get("user_id"),  # Assuming `user_id` is part of the activity document
             "activity_id": activity_id,
             "message": f"You have completed the activity: {activity.get('activity_name', 'Unnamed Activity')}",
             "timestamp": datetime.utcnow()
         }
-        notifications_collection.insert_one(notification)
+        notifications_collection.insert_one(user_notification)
 
-        return jsonify({"message": "Activity moved to past_activity successfully and notification created"}), 200
+        # Notification for the organization admin
+        org_admin_notification = {
+            "_id": ObjectId(),  # Generate a unique ID for the notification
+            "user_id": activity.get("user_id"),  # User ID of the person who completed the activity
+            "message": f"User {activity.get('username', 'Unknown User')} has completed the activity {activity.get('activity_name', 'Unnamed Activity')}.",
+            "activity_id": activity_id,
+            "activity_name": activity.get("activity_name", "Unnamed Activity"),
+            "timestamp": datetime.utcnow()
+        }
+
+        # Insert into the `notification_organizationadmin` collection
+        notifications_organizationadmin_collection.insert_one(org_admin_notification)
+
+        return jsonify({"message": "Activity moved to past_activity successfully and notifications created"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
@@ -874,6 +887,68 @@ def get_replies():
         })
 
     return jsonify({"replies": reply_list}), 200
+    
+@app.route('/api/reviews/average', methods=['GET'])
+def get_activity_average():
+    try:
+        # Extract 'activity_id' from the query string
+        activity_id = request.args.get('activity_id')
+
+        # Check if 'activity_id' is provided
+        if not activity_id:
+            return jsonify({"error": "activity_id parameter is required"}), 400
+
+        # Query the MongoDB collection for reviews
+        reviews_cursor = reviews_collection.find({"activity_id": activity_id})
+
+        # Convert cursor to a list safely
+        reviews = list(reviews_cursor)
+
+        # If no reviews exist for the activity
+        if not reviews:
+            return jsonify({
+                "activityId": activity_id,
+                "averageRating": 0,
+                "reviewCount": 0,
+                "message": "No reviews found for this activity."
+            }), 200
+
+        # Extract ratings from the reviews safely
+        ratings = [review.get("rating", 0) for review in reviews if "rating" in review]
+
+        # Handle the case of invalid/empty ratings safely
+        if not ratings:
+            return jsonify({
+                "activityId": activity_id,
+                "averageRating": 0,
+                "reviewCount": 0,
+                "message": "No valid ratings found."
+            }), 200
+
+        # Calculate average safely
+        average_rating = round(sum(ratings) / len(ratings), 2)
+
+        # Define feedback message based on calculated average
+        if average_rating >= 4:
+            message = "Excellent"
+        elif average_rating >= 3:
+            message = "Good"
+        elif average_rating >= 2:
+            message = "Average"
+        else:
+            message = "Poor"
+
+        # Return data to the frontend
+        return jsonify({
+            "activityId": activity_id,
+            "averageRating": average_rating,
+            "reviewCount": len(ratings),
+            "message": message
+        }), 200
+
+    except Exception as e:
+        # Handle unexpected internal server errors
+        return jsonify({"error": str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

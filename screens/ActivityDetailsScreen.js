@@ -132,6 +132,14 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
     });
   };
 
+  const handleViewReportPress = () => {
+    navigation.navigate('ViewReport', {
+      activity: activity, // Pass the entire activity object
+      userId: userId, // Pass userId
+      username: username, // Pass username
+    });
+  };
+
   const renderReview = ({ item }) => (
     <View style={styles.reviewItem}>
       <View style={styles.ratingContainer}>
@@ -195,6 +203,10 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleViewChatPress}>
             <Text style={styles.buttonText}>View Chat</Text>
+          </TouchableOpacity>
+          {/* View Report Button */}
+          <TouchableOpacity style={styles.button} onPress={handleViewReportPress}>
+            <Text style={styles.buttonText}>View Report</Text>
           </TouchableOpacity>
         </View>
       );
