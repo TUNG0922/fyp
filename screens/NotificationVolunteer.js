@@ -10,7 +10,10 @@ const NotificationVolunteer = ({ userId }) => {
       try {
         const response = await fetch(`http://10.0.2.2:5000/api/notifications/${userId}`);
         const data = await response.json();
-        setNotifications(data);
+
+        // Sort notifications by timestamp (latest first)
+        const sortedNotifications = data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setNotifications(sortedNotifications);
       } catch (error) {
         console.error('Error fetching notifications:', error);
       } finally {

@@ -128,18 +128,22 @@ def add_activity():
     description = data.get('description')
     imageUri = data.get('imageUri')
     user_id = data.get('userId')  # Get user ID from the request
+    genre = data.get('genre')  # Get genre from the request
 
-    if not all([name, location, date, description, imageUri, user_id]):
+    # Validate all required fields
+    if not all([name, location, date, description, imageUri, user_id, genre]):
         return jsonify({'message': 'All fields are required'}), 400
 
     try:
+        # Insert data into MongoDB collection
         activities_collection.insert_one({
             'name': name,
             'location': location,
             'date': date,
             'description': description,
             'imageUri': imageUri,
-            'userId': user_id  # Add user ID to the activity
+            'userId': user_id,
+            'genre': genre  # Add genre to the activity
         })
         return jsonify({"message": "Activity added successfully"}), 201
     except Exception as e:

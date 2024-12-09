@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, TextInput, Share, TouchableOpacity, Alert, Button } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Modal,  TextInput, Share, TouchableOpacity, Alert, Button } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NotificationVolunteer from './NotificationVolunteer'; // Import the Notification component
 import axios from 'axios'; // Ensure axios is imported
+import Ionicons from 'react-native-vector-icons/Ionicons'; // Import the filter icon
 
 // Create Top Tab Navigator
 const TopTab = createMaterialTopTabNavigator();
@@ -252,7 +253,9 @@ const DiscoverScreen = ({ username, userId, email, role }) => {
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(''); // State for search query
+  const [selectedGenres, setSelectedGenres] = useState([]); // State to track selected genres
   const navigation = useNavigation();
+  const [isFilterVisible, setFilterVisible] = useState(false); // State to control filter visibility
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -293,6 +296,28 @@ const DiscoverScreen = ({ username, userId, email, role }) => {
     }
   };
 
+  const handleGenreToggle = (genre) => {
+    if (selectedGenres.includes(genre)) {
+      setSelectedGenres(selectedGenres.filter((item) => item !== genre));
+    } else {
+      setSelectedGenres([...selectedGenres, genre]);
+    }
+  };
+  
+  const applyFilters = () => {
+    const filtered = activities.filter(activity =>
+      selectedGenres.includes(activity.genre?.toLowerCase() || '')
+    );
+    setFilteredActivities(filtered);
+    setFilterVisible(false);
+  };
+
+  const clearFilters = () => {
+    setSelectedGenres([]);
+    setFilteredActivities(activities);
+    setFilterVisible(false);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       {/* Search Bar */}
@@ -307,8 +332,48 @@ const DiscoverScreen = ({ username, userId, email, role }) => {
             handleSearch(text);
           }}
         />
+
+        {/* Filter Icon */}
+        <TouchableOpacity
+          style={styles.filterIconContainer}
+          onPress={() => setFilterVisible(true)} // Fixed this line
+        >
+          <Icon name="filter" size={20} color="#000" />
+        </TouchableOpacity>
       </View>
-  
+
+      {/* Filter Modal */}
+      {isFilterVisible && (
+        <View style={styles.filterPanel}>
+          <Text style={styles.filterTitle}>Filter by Genre:</Text>
+          {['philanthropy', 'service learning', 'community service', 'social action'].map(
+            (genre) => (
+              <TouchableOpacity
+                key={genre}
+                style={styles.checkboxContainer}
+                onPress={() => handleGenreToggle(genre)}
+              >
+                <Ionicons
+                  name={selectedGenres.includes(genre) ? 'checkbox' : 'square-outline'}
+                  size={24}
+                  color="#000"
+                />
+                <Text style={styles.checkboxLabel}>{genre}</Text>
+              </TouchableOpacity>
+            )
+          )}
+
+          <View style={styles.filterButtons}>
+            <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+              <Text style={styles.buttonText}>Apply</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <Text style={styles.buttonText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {loading ? (
         <ActivityIndicator size="large" color="#547DBE" />
       ) : (
@@ -627,6 +692,51 @@ const styles = StyleSheet.create({
     color: '#888', // Grey for empty state
     textAlign: 'center',
     marginTop: 30, // Add margin top for spacing
+  },
+  filterIconContainer: {
+    marginLeft: 10,
+  },
+  filterPanel: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  applyButton: {
+    backgroundColor: '#547DBE',
+    padding: 10,
+    borderRadius: 5,
+    flex: 0.48,
+    alignItems: 'center',
+  },
+  clearButton: {
+    backgroundColor: '#FF0000',
+    padding: 10,
+    borderRadius: 5,
+    flex: 0.48,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
   },
 });
 

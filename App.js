@@ -74,6 +74,7 @@ export default function App() {
           component={DashboardScreenVolunteer}
           options={{
             headerTitle: () => <LogoTitle />,
+            headerLeft: () => null, // Disables back button for just this screen
           }}
         />
         <Stack.Screen
@@ -88,6 +89,7 @@ export default function App() {
           component={DashboardScreenOrganizationAdmin}
           options={{
             headerTitle: () => <LogoTitle />,
+            headerLeft: () => null, // Disables back button for just this screen
           }}
         />
 
@@ -160,6 +162,7 @@ export default function App() {
           name="ViewList"
           component={ViewList}
           options={{
+            headerLeft: () => null, // Disables back button for just this screen
             headerTitle: 'View List',
           }}
         />

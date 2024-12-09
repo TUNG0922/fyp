@@ -10,8 +10,13 @@ const NotificationOrganizationAdmin = ({ route }) => {
     try {
       const response = await fetch(`http://10.0.2.2:5000/api/notifications/organization_admin/${userId}`);
       const data = await response.json();
+
       if (response.ok) {
-        setNotifications(data);
+        // Sort notifications by timestamp in descending order (latest first)
+        const sortedNotifications = data.sort(
+          (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        setNotifications(sortedNotifications);
       } else {
         Alert.alert('Error', data.error || 'Failed to fetch notifications');
       }

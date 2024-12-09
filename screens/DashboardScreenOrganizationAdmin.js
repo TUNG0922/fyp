@@ -5,6 +5,9 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Button, FlatList, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
+import { Picker } from '@react-native-picker/picker'; // Import Picker for dropdown
+import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from 'react-native-vector-icons/Ionicons'; // Import the filter icon
 
 // HomeScreen component
 const HomeScreen = ({ route }) => {
@@ -152,6 +155,9 @@ const DiscoverScreen = ({ route, navigation }) => {
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [genre, setGenre] = useState(''); // State for the genre field
+  const [isFilterVisible, setFilterVisible] = useState(false); // Manage filter visibility
+  const [selectedGenres, setSelectedGenres] = useState([]); // Store selected genres
 
   // Fetch activities specific to Organization Admin
   const fetchActivities = async () => {
@@ -161,21 +167,23 @@ const DiscoverScreen = ({ route, navigation }) => {
       const data = await response.json();
       if (response.ok) {
         setActivities(data);
-        setFilteredActivities(data); // Initialize filtered list
+        setFilteredActivities(data); // Reset filtered list
       } else {
         Alert.alert('Error', data.error || 'Failed to fetch activities');
       }
     } catch (error) {
-      console.error('Fetch activities error:', error);
-      Alert.alert('Error', 'Failed to fetch activities');
+      console.error('Error fetching activities:', error);
+      Alert.alert('Error', 'Could not fetch activities');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchActivities();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchActivities();
+    }, [userId]) // Refetch when screen gains focus or `userId` changes
+  );
 
   // Handle search text input
   const handleSearch = (text) => {
@@ -205,18 +213,18 @@ const DiscoverScreen = ({ route, navigation }) => {
           location,
           date,
           description,
+          genre, // Include genre in the request body
           imageUri,
-          userId, // Include userId in the body
+          userId,
         }),
       });
-
-      const data = await response.json();
+  
       if (response.ok) {
         Alert.alert('Success', 'Activity added successfully');
-        handleCancel(); // Clear form and close it
-        fetchActivities(); // Refresh activities list
+        handleCancel(); // Reset form and close it
       } else {
-        Alert.alert('Error', data.error || 'Something went wrong');
+        const data = await response.json();
+        Alert.alert('Error', data.message || 'Something went wrong');
       }
     } catch (error) {
       console.error('Submit error:', error);
@@ -230,6 +238,7 @@ const DiscoverScreen = ({ route, navigation }) => {
     setLocation('');
     setDate('');
     setDescription('');
+    setGenre(''); // Reset genre
     setImageUri(null);
     setFormVisible(false);
   };
@@ -276,6 +285,42 @@ const DiscoverScreen = ({ route, navigation }) => {
     });
   };
 
+  // Toggle filter visibility
+  const handleFilterPress = () => {
+    setFilterVisible((prev) => !prev);
+  };
+
+  // Handle genre checkbox toggle
+  const handleGenreToggle = (genre) => {
+    if (selectedGenres.includes(genre)) {
+      // Remove genre if already selected
+      setSelectedGenres(selectedGenres.filter((item) => item !== genre));
+    } else {
+      // Add genre to selected list
+      setSelectedGenres([...selectedGenres, genre]);
+    }
+  };
+
+  // Apply the genre filter
+  const applyFilters = () => {
+    if (selectedGenres.length === 0) {
+      setFilteredActivities(activities); // Reset to all activities if no genre is selected
+    } else {
+      const filtered = activities.filter((activity) =>
+        selectedGenres.includes(activity.genre?.toLowerCase() || '')
+      );
+      setFilteredActivities(filtered);
+    }
+    setFilterVisible(false); // Hide the filter panel after applying
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedGenres([]);
+    setFilteredActivities(activities);
+    setFilterVisible(false); // Hide the filter panel
+  };
+
   // Render each activity item
   const renderActivityItem = ({ item }) => (
     <TouchableOpacity onPress={() => handleActivityPress(item)}>
@@ -298,92 +343,161 @@ const DiscoverScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.screenContainer}>
-      {/* Search Bar */}
-      <View style={styles.searchBarContainer}>
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search by name, location, or date..."
-          value={searchText}
-          onChangeText={handleSearch}
-        />
+      {/* Search Bar with Search and Filter Icon */}
+    <View style={styles.searchBarContainer}>
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search by name, location, or date..."
+        value={searchText}
+        onChangeText={handleSearch}
+      />
+
+      {/* Filter Icon */}
+      <TouchableOpacity
+          style={styles.filterIconContainer}
+          onPress={handleFilterPress}
+        >
+          <Ionicons name="filter" size={24} color="#000" />
+        </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#00BFAE" />
-      ) : (
-        <FlatList
-          data={filteredActivities}
-          renderItem={renderActivityItem}
-          keyExtractor={(item) => item._id}
-        />
-      )}
-
-      {/* Floating Button to Open the Form */}
-      {!isFormVisible && (
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setFormVisible(true)}
-        >
-          <Text style={styles.addButtonText}>Add Activity</Text>
-        </TouchableOpacity>
-      )}
-
-{isFormVisible && (
-        <ScrollView style={styles.formContainer}>
-          <Text style={styles.formLabel}>Activity Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter activity name"
-            value={name}
-            onChangeText={setName}
-          />
-          <Text style={styles.formLabel}>Location</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter location"
-            value={location}
-            onChangeText={setLocation}
-          />
-          <Text style={styles.formLabel}>Date</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter date"
-            value={date}
-            onChangeText={setDate}
-          />
-          <Text style={styles.formLabel}>Description</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter description"
-            value={description}
-            onChangeText={setDescription}
-          />
-          
-          {/* Image Picker Button */}
-          <TouchableOpacity onPress={handlePickImage} style={styles.imagePickerButton}>
-            <Text style={styles.imagePickerButtonText}>Pick an Image</Text>
-          </TouchableOpacity>
-
-          {/* Display Image Preview if selected */}
-          {imageUri && (
-            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+      {/* Filter Panel */}
+      {isFilterVisible && (
+        <View style={styles.filterPanel}>
+          <Text style={styles.filterTitle}>Filter by Genre:</Text>
+          {['philanthropy', 'service learning', 'community service', 'social action'].map(
+            (genre) => (
+              <TouchableOpacity
+                key={genre}
+                style={styles.checkboxContainer}
+                onPress={() => handleGenreToggle(genre)}
+              >
+                <Ionicons
+                  name={
+                    selectedGenres.includes(genre) ? 'checkbox' : 'square-outline'
+                  }
+                  size={24}
+                  color="#000"
+                />
+                <Text style={styles.checkboxLabel}>{genre}</Text>
+              </TouchableOpacity>
+            )
           )}
-
-          {/* Cancel and Submit Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+          <View style={styles.filterButtons}>
+            <TouchableOpacity style={styles.applyButton} onPress={applyFilters}>
+              <Text style={styles.buttonText}>Apply</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>Submit</Text>
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={clearFilters}
+            >
+              <Text style={styles.buttonText}>Clear</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
+        </View>
       )}
+
+    {loading ? (
+      <ActivityIndicator size="large" color="#00BFAE" />
+    ) : (
+      <FlatList
+        data={filteredActivities}
+        renderItem={renderActivityItem}
+        keyExtractor={(item) => item._id}
+      />
+    )}
+
+    {/* Floating Button to Open the Form */}
+    {!isFormVisible && (
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => setFormVisible(true)}
+      >
+        <Text style={styles.addButtonText}>Add Activity</Text>
+      </TouchableOpacity>
+    )}
+
+    {isFormVisible && (
+      <ScrollView style={styles.formContainer}>
+        {/* Activity Name */}
+        <Text style={styles.formLabel}>Activity Name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter activity name"
+          placeholderTextColor="#000"
+          value={name}
+          onChangeText={setName}
+        />
+
+        {/* Location */}
+        <Text style={styles.formLabel}>Location</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter location"
+          placeholderTextColor="#000"
+          value={location}
+          onChangeText={setLocation}
+        />
+
+        {/* Date */}
+        <Text style={styles.formLabel}>Date</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter date"
+          placeholderTextColor="#000"
+          value={date}
+          onChangeText={setDate}
+        />
+
+        {/* Description */}
+        <Text style={styles.formLabel}>Description</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter description"
+          placeholderTextColor="#000"
+          value={description}
+          onChangeText={setDescription}
+        />
+
+        {/* Genre Picker */}
+        <Text style={styles.formLabel}>Genre</Text>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={genre}
+            onValueChange={(itemValue) => setGenre(itemValue)}
+          >
+            <Picker.Item label="Select Genre" value="" />
+            <Picker.Item label="Philanthropy" value="philanthropy" />
+            <Picker.Item label="Service Learning" value="service-learning" />
+            <Picker.Item label="Community Service" value="community-service" />
+            <Picker.Item label="Social Action" value="social-action" />
+          </Picker>
+        </View>
+
+        {/* Image Picker Button */}
+      <TouchableOpacity onPress={handlePickImage} style={styles.imagePickerButton}>
+        <Text style={styles.imagePickerButtonText}>Pick an Image</Text>
+      </TouchableOpacity>
+
+      {/* Display Image Preview if selected */}
+      {imageUri && (
+        <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+      )}
+
+      {/* Cancel and Submit Buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>Submit</Text>
+        </TouchableOpacity>
+      </View>
+      </ScrollView>
+    )}
     </SafeAreaView>
   );
 };
-
 
 // ProfileScreen component with Logout button
 const ProfileScreen = ({ route, navigation }) => {
@@ -483,14 +597,23 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+
+  screenContainer: {
+    flex: 1,
+  },
+
   searchBar: {
-    height: 40,
-    borderColor: '#ccc',
+    flex: 1,
     borderWidth: 1,
+    borderColor: '#ddd',
     borderRadius: 8,
-    margin: 10,
     paddingHorizontal: 10,
-    backgroundColor: '#f9f9f9',
+    height: 40,
   },
 
   // Text styles
@@ -587,12 +710,14 @@ const styles = StyleSheet.create({
     marginBottom: 20, // Add bottom margin to make it look less cramped
   },  
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
-    backgroundColor: '#fafafa', // Lighter background for input fields
+    padding: 10,
+    borderWidth: 1,           // Adds the border
+    borderColor: '#000',      // Border color
+    borderRadius: 5,          // Rounded corners
+    marginBottom: 15,         // Space between fields
+    fontSize: 16,             // Text size
+    color: '#333',            // Text color
+    textAlign: 'left',        // Ensures text is aligned to the left
   },
   textArea: {
     height: 100,
@@ -601,7 +726,7 @@ const styles = StyleSheet.create({
   formLabel: {
     fontWeight: 'bold',
     marginBottom: 5,
-    color: '#333', // Dark text color for labels
+    color: '#000', // Ensures the label text is black
   },
   
   // Image Picker Styles
@@ -611,6 +736,8 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     marginBottom: 10,
+    paddingVertical: 15, // Reduced vertical space
+    marginBottom: 10, // Reduced margin to pull buttons closer
   },
   imagePickerText: {
     color: '#fff',
@@ -636,6 +763,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Space the buttons evenly
     marginTop: 20, // Adds top margin to separate from the form
     width: '100%', // Ensures buttons take up full width for alignment
+    marginBottom: 40, // Reduced vertical space here
   },   
   
   // Cancel Button
@@ -725,6 +853,66 @@ const styles = StyleSheet.create({
     color: '#fff', // White text for contrast
     fontWeight: 'bold',
     fontSize: 16, // Slightly larger font size
+  },
+  formContainer: {
+    paddingVertical: 30, // Increase vertical padding for better space
+    paddingHorizontal: 20,
+    backgroundColor: '#f9f9f9',
+    flexGrow: 1, // Allows ScrollView to expand vertically
+  },
+  formLabel: {
+    fontSize: 18, // Larger font size
+    marginBottom: 8,
+    color: '#333',
+  },
+  pickerContainer: {
+    borderWidth: 1,            // Set the width of the border
+    borderColor: '#000',       // Set the border color
+    borderRadius: 5,           // Optionally round the corners
+    paddingHorizontal: 10,     // Add horizontal padding inside the box
+    paddingVertical: 5,       // Add vertical padding inside the box
+    marginBottom: 10,         // Space below the Picker
+  },
+  filterIconContainer: {
+    padding: 5,
+  },
+  filterPanel: {
+    backgroundColor: '#f9f9f9',
+    padding: 15,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  filterTitle: {
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  checkboxLabel: {
+    marginLeft: 10,
+    fontSize: 16,
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  applyButton: {
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+  },
+  clearButton: {
+    backgroundColor: '#f44336',
+    padding: 10,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
