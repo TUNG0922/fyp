@@ -10,7 +10,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import the filter icon
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// HomeScreen component
 const HomeScreen = ({ route }) => {
   const { userId, userName, userEmail } = route.params; // Destructure userName and userEmail
   const [joinedActivities, setJoinedActivities] = useState([]);
@@ -20,16 +19,16 @@ const HomeScreen = ({ route }) => {
     try {
       const response = await axios.get(`http://10.0.2.2:5000/api/joined_activities/${userId}`);
       const userJoinedActivities = response.data;
-  
+
       console.log("Fetched activities data:", userJoinedActivities);  // Log full data to check structure
-  
+
       if (userJoinedActivities.length === 0) {
         Alert.alert('Info', 'No joined activities found for this user.');
       } else {
         setJoinedActivities(userJoinedActivities);
       }
     } catch (error) {
-      //console.error('Fetch activities error:', error);
+      console.error('Fetch activities error:', error);
     } finally {
       setLoading(false);
     }
@@ -45,17 +44,17 @@ const HomeScreen = ({ route }) => {
       if (!activityId) {
         throw new Error("Activity ID is missing");
       }
-  
+
       const response = await axios.post(
         'http://10.0.2.2:5000/api/accept_activity',
         { join_activity_id: activityId },
         { headers: { 'Content-Type': 'application/json' } }
       );
-  
+
       if (response.data.message === 'Activity moved to completed') {
         Alert.alert('Accepted', 'The activity has been accepted successfully!');
         setJoinedActivities((prevActivities) =>
-          prevActivities.filter((activity) => activity.activity_id !== activityId)  // Update to correct field name
+          prevActivities.filter((activity) => activity.activity_id !== activityId)  // Correct field name
         );
       }
     } catch (error) {
@@ -70,16 +69,15 @@ const HomeScreen = ({ route }) => {
         throw new Error('Activity ID is missing');
       }
       console.log('Rejecting activity with ID:', activityId);
-  
-      // Send POST request with the activity ID in the request body
+
       const response = await axios.post('http://10.0.2.2:5000/api/reject_activity', {
         join_activity_id: activityId, // Pass the ID as expected by the backend
       });
-  
+
       if (response.data.message === 'Activity rejected successfully') {
         Alert.alert('Rejected', 'The activity has been rejected successfully!');
         setJoinedActivities((prevActivities) =>
-          prevActivities.filter((activity) => activity._id !== activityId)
+          prevActivities.filter((activity) => activity.activity_id !== activityId)  // Correct field name
         );
       } else {
         Alert.alert('Error', response.data.message || 'Failed to reject the activity.');
@@ -93,6 +91,55 @@ const HomeScreen = ({ route }) => {
     }
   };  
 
+  const handleCardPress = async (username, email) => {
+    try {
+        // Log input data for debugging purposes
+        console.log('Username:', username);
+        console.log('Email:', email);
+
+        // API request to fetch activity details
+        const response = await axios.post('http://10.0.2.2:5000/api/get_joined_activity_details', {
+            username,
+            email,
+        });
+
+        // Log the response data
+        console.log('API Response:', response.data);
+
+        // Check if the response contains valid data
+        if (response.data && 
+            response.data.strength !== undefined && 
+            response.data.previous_experiences !== undefined) {
+
+            const { strength, previous_experiences } = response.data;
+
+            // Display activity details in an alert
+            Alert.alert(
+                'Volunteer Details',
+                `Strength: ${strength}\nPrevious Experiences: ${previous_experiences}`,
+                [{ text: 'OK' }]
+            );
+        } else {
+            // Handle cases where data is missing
+            Alert.alert(
+                'No Data',
+                'The volunteer details could not be retrieved. Please try again later.',
+                [{ text: 'OK' }]
+            );
+        }
+    } catch (error) {
+        // Log and handle errors
+        console.error('Error fetching volunteer details:', error);
+
+        // Inform the user about the error
+        Alert.alert(
+            'Error',
+            'An error occurred while retrieving volunteer details. Please try again later.',
+            [{ text: 'OK' }]
+        );
+    }
+};
+
   if (loading) {
     return (
       <View style={styles.screenContainer}>
@@ -104,42 +151,45 @@ const HomeScreen = ({ route }) => {
   return (
     <View style={styles.screenContainer}>
       <FlatList
-      data={joinedActivities}
-      keyExtractor={(item) => item.activity_id?.toString() || Math.random().toString()}
-      renderItem={({ item }) => {
-        console.log("Rendering activity with ID:", item.activity_id);  // Log to confirm field name
-        return (
-          <View style={styles.activityItem}>
-            <Image 
-              source={{ uri: item.image || 'default_image_url' }}  // Fallback image if undefined
-              style={styles.activityImage} 
-            />
-            <View style={styles.activityDetails}>
-              <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
-              <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
-              <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
-              <Text style={styles.userNameText}>{item.username || 'Unknown User'}</Text>
-              <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity 
-                style={[styles.button, { backgroundColor: '#4CAF50', marginRight: 10 }]} // Green color for Accept
-                onPress={() => handleAccept(item.activity_id)}  // Use correct ID field
-              >
-                <Text style={styles.buttonText}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, { backgroundColor: '#FF4B4B' }]} // Red color for Reject
-                onPress={() => handleReject(item.activity_id)}  // Use correct ID field
-              >
-                <Text style={styles.buttonText}>Reject</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        );
-      }}
-      ListEmptyComponent={<Text>No activities available for response.</Text>}
-    />
+        data={joinedActivities}
+        keyExtractor={(item) => item.activity_id?.toString() || Math.random().toString()}
+        renderItem={({ item }) => {
+          console.log("Item data:", item); // Log the full item object for debugging
+          console.log("Rendering activity with ID:", item.activity_id);  // Log to confirm field name
+          return (
+              <TouchableOpacity onPress={() => handleCardPress(item.username, item.email)}>
+                <View style={styles.activityItem}>
+                <Image 
+                  source={{ uri: item.image || 'default_image_url' }}  // Fallback image if undefined
+                  style={styles.activityImage} 
+                />
+                <View style={styles.activityDetails}>
+                  <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
+                  <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
+                  <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+                  <Text style={styles.userNameText}>{item.username || 'Unknown User'}</Text>
+                  <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity 
+                    style={[styles.button, { backgroundColor: '#4CAF50', marginRight: 10 }]} // Green color for Accept
+                    onPress={() => handleAccept(item.activity_id)}  // Use correct ID field
+                  >
+                    <Text style={styles.buttonText}>Accept</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.button, { backgroundColor: '#FF4B4B' }]} // Red color for Reject
+                    onPress={() => handleReject(item.activity_id)}  // Use correct ID field
+                  >
+                    <Text style={styles.buttonText}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={<Text>No activities available for response.</Text>}
+      />
     </View>
   );
 };

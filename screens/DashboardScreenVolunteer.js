@@ -68,22 +68,15 @@ const PendingActivities = ({ userId }) => {
 };
 
 // Upcoming Activities Component
-const UpcomingActivities = () => {
-  // State to store activities
+const UpcomingActivities = ({ userId }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch upcoming/completed activities
-  const fetchUpcomingActivities = async () => {
+  // Fetch completed activities for the specific userId
+  const fetchCompletedActivities = async () => {
     try {
-      const response = await axios.get('http://10.0.2.2:5000/api/completed_joined_activity');
-      const completedActivities = response.data;
-  
-      console.log("Fetched completed activities:", completedActivities);  // Log to inspect structure
-  
-      if (completedActivities.length > 0) {
-        setActivities(completedActivities);
-      }
+      const response = await axios.get(`http://10.0.2.2:5000/api/completed_joined_activity/${userId}`);
+      setActivities(response.data);
     } catch (error) {
       console.error('Error fetching completed activities:', error);
       Alert.alert('Error', 'Failed to fetch completed activities. Please try again.');
@@ -99,7 +92,7 @@ const UpcomingActivities = () => {
 
       if (response.status === 200) {
         Alert.alert('Success', 'Activity moved to past activities!');
-        fetchUpcomingActivities();  // Refresh the list after completion
+        fetchCompletedActivities();  // Refresh the list after completion
       }
     } catch (error) {
       console.error('Error completing activity:', error);
@@ -108,34 +101,32 @@ const UpcomingActivities = () => {
   };
 
   // Render each activity in the list
-  const renderActivity = ({ item }) => {
-    return (
-      <View style={styles.activityCard}>
-        {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.activityImage} />
-        ) : (
-          <View style={styles.noImageContainer}>
-            <Text style={styles.noImageText}>No Image Available</Text>
-          </View>
-        )}
-        <View style={styles.activityDetails}>
-          <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
-          <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
-          <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
-          <TouchableOpacity 
-            style={styles.completeButton}
-            onPress={() => handleComplete(item._id)}
-          >
-            <Text style={styles.completeButtonText}>Complete</Text>
-          </TouchableOpacity>
+  const renderActivity = ({ item }) => (
+    <View style={styles.activityCard}>
+      {item.image_url ? (
+        <Image source={{ uri: item.image_url }} style={styles.activityImage} />
+      ) : (
+        <View style={styles.noImageContainer}>
+          <Text style={styles.noImageText}>No Image Available</Text>
         </View>
+      )}
+      <View style={styles.activityDetails}>
+        <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
+        <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
+        <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+        <TouchableOpacity 
+          style={styles.completeButton}
+          onPress={() => handleComplete(item._id)}
+        >
+          <Text style={styles.completeButtonText}>Complete</Text>
+        </TouchableOpacity>
       </View>
-    );
-  };
+    </View>
+  );
 
   useEffect(() => {
-    fetchUpcomingActivities();
-  }, []);
+    fetchCompletedActivities();
+  }, [userId]);
 
   return (
     <View style={styles.container}>
@@ -144,9 +135,9 @@ const UpcomingActivities = () => {
       ) : (
         <FlatList
           data={activities}
-          keyExtractor={(item) => item._id?.toString() || Math.random().toString()}
+          keyExtractor={(item) => item._id.toString()}
           renderItem={renderActivity}
-          ListEmptyComponent={<Text>No upcoming activities found.</Text>}
+          ListEmptyComponent={<Text>No completed activities found.</Text>}
         />
       )}
     </View>
@@ -247,8 +238,7 @@ const CompletedActivities = ({ userId }) => {
   );
 };
 
-// DiscoverScreen Component
-const DiscoverScreen = ({ username, userId, email, role }) => {
+const DiscoverScreen = ({ username, userId, email, role, strength, previous_experiences }) => {
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -328,7 +318,7 @@ const DiscoverScreen = ({ username, userId, email, role }) => {
           placeholder="Search activities..."
           value={searchQuery}
           onChangeText={(text) => {
-            console.log('Search Query Changed:', text); // Logs the new search query
+            console.log('Search Query Changed:', text); // Logs the search query
             handleSearch(text);
           }}
         />
@@ -397,30 +387,34 @@ const DiscoverScreen = ({ username, userId, email, role }) => {
                 <Text>{item.date}</Text>
                 <Text>{item.location}</Text>
                 <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => {
-                    const activityUserId = item.userId; // Extract userId from the activity object
-                    console.log('Navigating to ActivityDetailsVolunteer with:', {
-                      activity: item,
-                      userId: activityUserId, // Use the activity's userId
-                      name: username,
-                      email: email,
-                      image: item.imageUri,
-                      role: role,
-                    });
-                    navigation.navigate('ActivityDetailsVolunteer', {
-                      activity: item,
-                      userId: activityUserId, // Pass the activity's userId here
-                      name: username,
-                      email: email,
-                      image: item.imageUri,
-                      role: role,
-                    });
-                  }}
-                >
-                  <Text style={styles.buttonText}>Details</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => {
+                      const activityUserId = item.userId; // Extract userId from the activity object
+                      console.log('Navigating to ActivityDetailsVolunteer with:', {
+                        activity: item,
+                        userId: activityUserId, // Use the activity's userId
+                        name: username,
+                        email: email,
+                        image: item.imageUri,
+                        role: role,
+                        strength: strength,
+                        previous_experiences: previous_experiences
+                      });
+                      navigation.navigate('ActivityDetailsVolunteer', {
+                        activity: item,
+                        userId: userId, // Pass the activity's userId here
+                        name: username,
+                        email: email,
+                        image: item.imageUri,
+                        role: role,
+                        strength: strength,
+                        previous_experiences: previous_experiences
+                      });
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Details</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.button, styles.shareButton]}
                     onPress={() => {
@@ -506,13 +500,17 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
 const Tab = createBottomTabNavigator();
 
 const DashboardScreenVolunteer = ({ route }) => {
-  const { userId, username, password, email, role } = route.params;
+  const { userId, username, password, email, role, strength, previous_experiences } = route.params;
+
+  // Log details for verification
   console.log("DashboardScreenVolunteer - userId:", userId);
-  // Log the username, userId, email, and role to confirm they are passed correctly
   console.log('Username:', username);
   console.log('UserId:', userId);
   console.log('Email:', email);
-  console.log('Role:', role); // Log the role to make sure it's passed in
+  console.log('Role:', role); // Log the role
+  console.log('Strength:', strength); // Log strength
+  console.log('Previous Experiences:', previous_experiences); // Log previous experiences
+
   return (
     <Tab.Navigator>
       <Tab.Screen 
@@ -537,7 +535,7 @@ const DashboardScreenVolunteer = ({ route }) => {
       />
       <Tab.Screen 
         name="Discover" 
-        children={() => <DiscoverScreen username={username} userId={userId} email={email} />} 
+        children={() => <DiscoverScreen username={username} userId={userId} email={email} strength={strength} previous_experiences={previous_experiences} />} 
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="search" size={20} color={color} />

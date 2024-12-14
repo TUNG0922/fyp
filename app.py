@@ -112,12 +112,18 @@ def signin():
         if user.get('role') != role:
             return jsonify({'message': 'Role mismatch'}), 403
 
+        # Include additional fields in the response
+        strength = user.get('strength', '')
+        previous_experiences = user.get('previous_experiences', '')
+
         # Return user details if sign-in is successful
         return jsonify({
             'message': 'Sign-in successful',
             'userId': str(user['_id']),
             'username': user.get('name', 'N/A'),
-            'role': user['role']
+            'role': user['role'],
+            'strength': strength,
+            'previous_experiences': previous_experiences
         }), 200
 
     except PyMongoError as e:
@@ -189,7 +195,7 @@ def join_activity():
     data = request.get_json()
 
     # Extract and validate input data, including activity_user_id
-    required_fields = ['user_id', 'username', 'email', 'activity_id', 'activity_name', 'location', 'date', 'image', 'activity_user_id']
+    required_fields = ['user_id', 'username', 'email', 'activity_id', 'activity_name', 'location', 'date', 'image', 'activity_user_id', 'strength', 'previous_experiences']
     if not all(field in data for field in required_fields):
         return jsonify({'message': 'All fields are required'}), 400
 
@@ -202,6 +208,8 @@ def join_activity():
     date = data['date']
     image = data['image']
     activity_user_id = data['activity_user_id']  # Extract organization admin ID as activity_user_id
+    strength = data['strength']
+    previous_experiences = data['previous_experiences']
 
     try:
         # Get the activity to retrieve its organization_admin_id
@@ -224,6 +232,8 @@ def join_activity():
             'date': date,
             'image': image,
             'activity_user_id': activity_user_id,  # Store the provided activity_user_id
+            'strength': strength,                  # Include strength
+            'previous_experiences': previous_experiences  # Include previous_experiences
         })
 
         # Create a notification for the user
@@ -239,7 +249,7 @@ def join_activity():
         # Create a notification for the organization admin
         notifications_organizationadmin_collection.insert_one({
             'user_id': activity_user_id,  # The organization admin's ID
-            'message': f'User "{username}" has applied to joined your activity "{activity_name}".',
+            'message': f'User "{username}" has applied to join your activity "{activity_name}".',
             'activity_id': activity_id,
             'activity_name': activity_name,
             'timestamp': datetime.now(timezone.utc)  # Use timezone-aware timestamp
@@ -579,10 +589,10 @@ def accept_activity():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route('/api/completed_joined_activity', methods=['GET'])
-def get_completed_activities():
+@app.route('/api/completed_joined_activity/<user_id>', methods=['GET'])
+def get_completed_activities(user_id):
     try:
-        activities = completed_joined_activity_collection.find()
+        activities = completed_joined_activity_collection.find({'user_id': user_id})
         activities_list = []
         
         for activity in activities:
@@ -959,6 +969,35 @@ def get_activity_average():
     except Exception as e:
         # Handle unexpected internal server errors
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/get_joined_activity_details', methods=['POST'])
+def get_joined_activity_details():
+    data = request.json
+    name = data.get('name') or data.get('username')
+    email = data.get('email')
+
+    if not name or not email:
+        app.logger.error(f"Missing name or email: {data}")
+        return jsonify({'message': 'Missing name or email'}), 400
+
+    app.logger.info(f"Fetching volunteer details for name: {name}, email: {email}")
+
+    # Query the database
+    volunteer = mongo.db.volunteers.find_one({'name': name, 'email': email})
+    if not volunteer:
+        app.logger.error(f"User not found: name={name}, email={email}")
+        return jsonify({'message': 'User not found'}), 404
+
+    # Get previous_experiences and strength
+    previous_experiences = volunteer.get('previous_experiences', None)
+    strength = volunteer.get('strength', None)
+
+    app.logger.info(f"Fetched volunteer details: previous_experiences={previous_experiences}, strength={strength}")
+
+    return jsonify({
+        'previous_experiences': previous_experiences,
+        'strength': strength
+    })
     
 if __name__ == '__main__':
     app.run(debug=True)

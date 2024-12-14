@@ -7,8 +7,8 @@ const ActivityDetailsVolunteer = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  const { activity, userId, name, email, image, role = 'Volunteer' } = route.params || {};
-
+  const { activity, userId, name, email, image, role = 'Volunteer', strength, previous_experiences } = route.params || {};
+  console.log('User ID:', userId);  // Add this line
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [replies, setReplies] = useState({});  // State to store replies by review ID
@@ -101,6 +101,7 @@ const ActivityDetailsVolunteer = () => {
       return;
     }
 
+    // Include strength and previous_experiences in joinActivityData
     const joinActivityData = {
       user_id: userId,
       username: name,
@@ -111,6 +112,8 @@ const ActivityDetailsVolunteer = () => {
       date: activity.date,
       image: image,
       activity_user_id: activity.userId,
+      strength: strength,                // Add strength
+      previous_experiences: previous_experiences  // Add previous_experiences
     };
 
     try {
