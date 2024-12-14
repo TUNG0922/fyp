@@ -152,8 +152,8 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
         />
       </View>
       <View style={styles.commentContainer}>
-        <Text style={styles.reviewText}>{item.text}</Text>
-        <Text style={styles.reviewAuthor}>{item.name}</Text>
+            <Text style={styles.reviewText}>{item.text}</Text>
+            <Text style={styles.reviewAuthor}>{item.name}</Text>
       </View>
       <TouchableOpacity
         style={styles.button}
@@ -183,18 +183,19 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
   );
 
   const renderItem = ({ item }) => {
-    if (item.type === 'activity') {
-      return (
-        <View style={styles.detailsContainer}>
-          {activity.imageUri ? (
-            <Image source={{ uri: activity.imageUri }} style={styles.image} />
-          ) : (
-            <View style={styles.imagePlaceholder} />
-          )}
-          <Text style={styles.name}>{activity.name}</Text>
-          <Text style={styles.location}>{activity.location}</Text>
-          <Text style={styles.date}>{activity.date}</Text>
-          <Text style={styles.description}>{activity.description}</Text>
+  if (item.type === 'activity') {
+    return (
+      <View style={styles.detailsContainer}>
+        {activity.imageUri ? (
+          <Image source={{ uri: activity.imageUri }} style={styles.image} />
+        ) : (
+          <View style={styles.imagePlaceholder} />
+        )}
+        <Text style={styles.name}>{activity.name}</Text>
+        <Text style={styles.location}>{activity.location}</Text>
+        <Text style={styles.date}>{activity.date}</Text>
+        <Text style={styles.description}>{activity.description}</Text>
+        <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={handleEditPress}>
             <Text style={styles.buttonText}>Edit</Text>
           </TouchableOpacity>
@@ -204,13 +205,13 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
           <TouchableOpacity style={styles.button} onPress={handleViewChatPress}>
             <Text style={styles.buttonText}>View Chat</Text>
           </TouchableOpacity>
-          {/* View Report Button */}
           <TouchableOpacity style={styles.button} onPress={handleViewReportPress}>
             <Text style={styles.buttonText}>View Report</Text>
           </TouchableOpacity>
         </View>
-      );
-    }
+      </View>
+    );
+  }
 
     if (item.type === 'reviews') {
       return (
@@ -271,41 +272,63 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
         onRequestClose={() => setEditModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Activity</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Activity Name"
-              value={editedActivity.name}
-              onChangeText={(text) => setEditedActivity({ ...editedActivity, name: text })}
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Location"
-              value={editedActivity.location}
-              onChangeText={(text) => setEditedActivity({ ...editedActivity, location: text })}
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Date"
-              value={editedActivity.date}
-              onChangeText={(text) => setEditedActivity({ ...editedActivity, date: text })}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.descriptionInput]}
-              placeholder="Description"
-              value={editedActivity.description}
-              onChangeText={(text) => setEditedActivity({ ...editedActivity, description: text })}
-              multiline
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.saveButton} onPress={handleEditSubmit}>
-                <Text style={styles.buttonText}>Save Changes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Edit Activity</Text>
+
+        {/* Activity Name Input with Label */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Activity Name</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Activity Name"
+            value={editedActivity.name}
+            onChangeText={(text) => setEditedActivity({ ...editedActivity, name: text })}
+          />
+        </View>
+
+        {/* Location Input with Label */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Location</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Location"
+            value={editedActivity.location}
+            onChangeText={(text) => setEditedActivity({ ...editedActivity, location: text })}
+          />
+        </View>
+
+        {/* Date Input with Label */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Date</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Date"
+            value={editedActivity.date}
+            onChangeText={(text) => setEditedActivity({ ...editedActivity, date: text })}
+          />
+        </View>
+
+        {/* Description Input with Label */}
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Description</Text>
+          <TextInput
+            style={[styles.modalInput, styles.descriptionInput]}
+            placeholder="Description"
+            value={editedActivity.description}
+            onChangeText={(text) => setEditedActivity({ ...editedActivity, description: text })}
+            multiline
+          />
+        </View>
+        {/* Buttons Container: Save and Cancel */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleEditSubmit}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.cancelButton} onPress={() => setEditModalVisible(false)}>
+          <Text style={styles.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+          </View>
           </View>
         </View>
       </Modal>
@@ -330,8 +353,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     borderRadius: 10,
   },
+  inputContainer: {
+    marginBottom: 20,  // Increased spacing between input groups
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,  // Adjusted label spacing
+    color: '#333',
+  },
   detailsContainer: {
-    padding: 15,
+        marginHorizontal: 20, // Consistent padding from edges
+  },
+  buttonContainer: {
+    marginHorizontal: 20, // Consistent padding from edges
+    marginTop: 20,  // Increased spacing between form and buttons
   },
   name: {
     fontSize: 24,
@@ -350,32 +386,50 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   button: {
-    backgroundColor: '#4CAF50',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    backgroundColor: '#6200EE', // Primary color
+    borderRadius: 8, // Rounded corners
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginVertical: 8, // Space between buttons
+    alignItems: 'center',
+    elevation: 5, // Shadow for Android
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   reviewContainer: {
-    padding: 15,
+    marginTop: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#F9FAFB', // Subtle background color for contrast
+    borderRadius: 10,
+    paddingBottom: 16,
   },
   reviewTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#333333',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   reviewItem: {
-    padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    marginBottom: 10,
+    padding: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2, // For Android
   },
   ratingContainer: {
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  rating: {
+    alignSelf: 'flex-start',
+  },
+  commentContainer: {
+    marginBottom: 12,
   },
   reviewText: {
     fontSize: 16,
@@ -387,11 +441,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#777',
+    color: '#888888',
+    textAlign: 'center',
+    marginTop: 20,
+    fontStyle: 'italic', // Add subtle styling for empty state
   },
   errorText: {
-    fontSize: 16,
-    color: 'red',
+    fontSize: 14,
+    color: '#FF4D4D', // Highlight errors in red
+    textAlign: 'center',
+    marginVertical: 10,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
@@ -406,22 +466,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '90%',
-    backgroundColor: '#fff', // White background
+    width: '90%',  // Broaden container to 90% of screen width
+    paddingHorizontal: 20,
+    paddingVertical: 25,  // Increased vertical padding
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 5, // Shadow for Android
-    shadowColor: '#000', // Shadow for iOS
-    shadowOpacity: 0.25,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
+    elevation: 3,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+    marginBottom: 15,  // Increased space between title and form
+    textAlign: 'center',
   },
   textInput: {
     height: 40,
@@ -436,24 +496,46 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   repliesContainer: {
-    paddingLeft: 20,
-    marginTop: 5,
+    marginTop: 8,
+    paddingLeft: 16,
+    paddingVertical: 4,
   },
-  replyText: {
+  reviewText: {
     fontSize: 14,
-    color: '#555',
-    marginBottom: 5,
+    color: '#444444',
+    lineHeight: 20,
+  },
+  reviewAuthor: {
+    fontSize: 12,
+    color: '#888888',
+    marginTop: 4,
+  },
+  reviewDate: {
+    fontSize: 12,
+    color: '#666666',
+    marginVertical: 4,
+  },
+  reviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2, // For Android
   },
   modalInput: {
-    width: '100%',
-    height: 100,
-    borderColor: '#ccc',
-    borderWidth: 1,
+    backgroundColor: '#F0F0F0',
     borderRadius: 8,
-    padding: 10,
-    textAlignVertical: 'top',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginBottom: 15,  // Increased spacing between input fields
     fontSize: 16,
-    marginBottom: 15,
+  },
+  descriptionInput: {
+    height: 100,  // Increased height for the description input
   },
   modalButtonsContainer: {
     flexDirection: 'row',
@@ -478,7 +560,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF', // Text color for contrast
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -489,6 +571,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginRight: 10,
+  },
+  replyItem: {
+    marginBottom: 6,
+  },
+  replyAuthor: {
+    fontSize: 12,
+    color: '#111111',
+    fontWeight: 'bold',
   },
 });
 

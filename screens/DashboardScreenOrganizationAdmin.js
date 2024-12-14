@@ -8,6 +8,7 @@ import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // 
 import { Picker } from '@react-native-picker/picker'; // Import Picker for dropdown
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import the filter icon
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // HomeScreen component
 const HomeScreen = ({ route }) => {
@@ -501,11 +502,34 @@ const DiscoverScreen = ({ route, navigation }) => {
 
 // ProfileScreen component with Logout button
 const ProfileScreen = ({ route, navigation }) => {
-  const { username, userId, password, email, role } = route.params;
+  const { username, userId, email, role } = route.params;
 
-  const handleLogout = () => {
-    // Implement your logout logic here
-    navigation.navigate('SignIn'); // Assuming you have a 'SignIn' screen defined in your navigator
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout Confirmation',
+      'Are you sure you want to log out?',
+      [
+        { 
+          text: 'Yes', 
+          onPress: async () => {
+            try {
+              // Clear any stored user data
+              await AsyncStorage.clear();
+              
+              // Navigate to the SignInScreen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred while logging out. Please try again.');
+            }
+          }
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
   };
 
   const handleEditProfile = () => {
@@ -514,18 +538,22 @@ const ProfileScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.screenContainer}>
-      <Text style={styles.screenText}>Name: {username}</Text>
-      <Text style={styles.screenText}>Email: {email}</Text>
-      <Text style={styles.screenText}>Role: {role}</Text>
+    <View style={styles.container}>
+      <View style={styles.infoContainer}>
+        <Text style={styles.infoText}>Name: <Text style={styles.value}>{username}</Text></Text>
+        <Text style={styles.infoText}>Email: <Text style={styles.value}>{email}</Text></Text>
+        <Text style={styles.infoText}>Role: <Text style={styles.value}>{role}</Text></Text>
+      </View>
 
-      <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-        <Text style={styles.editProfileButtonText}>Edit Profile</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+          <Text style={styles.buttonText}>Edit Profile</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -662,10 +690,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333', // Dark text color for better readability
   },
+  
   activityLocation: {
     fontSize: 15,
     color: '#777', // Light gray for less important text
   },
+
   activityDate: {
     fontSize: 13,
     color: '#999', // Lighter color for date
@@ -678,6 +708,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     color: '#333',
   },
+
   userEmailText: {
     fontSize: 12,
     color: '#555',
@@ -691,6 +722,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     alignItems: 'center',
   },
+
   deleteButtonText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -708,7 +740,8 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     height: 800, // Fixed height in pixels (adjust this value as needed)
     marginBottom: 20, // Add bottom margin to make it look less cramped
-  },  
+  }, 
+
   input: {
     padding: 10,
     borderWidth: 1,           // Adds the border
@@ -719,10 +752,12 @@ const styles = StyleSheet.create({
     color: '#333',            // Text color
     textAlign: 'left',        // Ensures text is aligned to the left
   },
+
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
+
   formLabel: {
     fontWeight: 'bold',
     marginBottom: 5,
@@ -739,6 +774,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15, // Reduced vertical space
     marginBottom: 10, // Reduced margin to pull buttons closer
   },
+
   imagePickerText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -775,6 +811,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     alignItems: 'center',
   },
+
   cancelButtonText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -790,29 +827,35 @@ const styles = StyleSheet.create({
   
   // Logout Button
   logoutButton: {
-    backgroundColor: '#FF4B4B',
+    backgroundColor: '#FF4B4B',  // Vibrant red color
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 20,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    marginVertical: 10,  // Adjusting margin for consistency
   },
 
-  // Edit Profile Button
-  editProfileButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  editProfileButtonText: {
-    color: '#fff',
+  logoutButtonText: {
+    color: '#fff',  // White text color for contrast
     fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
   },
+
+  // Edit Button
+  editButton: {
+    backgroundColor: '#4CAF50',  // Green color for edit button
+    padding: 15,
+    borderRadius: 10,
+    marginHorizontal: 5,  // Adjusting margin to align with other buttons
+  },
+
+  editButtonText: {
+    color: '#fff',  // White text color for contrast
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+
   submitButton: {
     backgroundColor: '#00BFAE', // Vibrant green color
     borderRadius: 12, // Rounded corners for a modern look
@@ -828,6 +871,7 @@ const styles = StyleSheet.create({
     flex: 1, // Ensures buttons have equal width
     marginHorizontal: 5, // Small margin between buttons
   },
+
   submitButtonText: {
     color: '#fff', // White text for contrast
     fontWeight: 'bold',
@@ -849,11 +893,13 @@ const styles = StyleSheet.create({
     flex: 1, // Ensures buttons have equal width
     marginHorizontal: 5, // Small margin between buttons
   },
+
   cancelButtonText: {
     color: '#fff', // White text for contrast
     fontWeight: 'bold',
     fontSize: 16, // Slightly larger font size
   },
+
   formContainer: {
     paddingVertical: 30, // Increase vertical padding for better space
     paddingHorizontal: 20,
@@ -865,6 +911,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#333',
   },
+
   pickerContainer: {
     borderWidth: 1,            // Set the width of the border
     borderColor: '#000',       // Set the border color
@@ -873,45 +920,76 @@ const styles = StyleSheet.create({
     paddingVertical: 5,       // Add vertical padding inside the box
     marginBottom: 10,         // Space below the Picker
   },
+
   filterIconContainer: {
     padding: 5,
   },
+
   filterPanel: {
     backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 5,
     marginBottom: 10,
   },
+
   filterTitle: {
     fontWeight: 'bold',
     marginBottom: 10,
   },
+
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 5,
   },
+
   checkboxLabel: {
     marginLeft: 10,
     fontSize: 16,
   },
+
   filterButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
   },
+
   applyButton: {
     backgroundColor: '#4CAF50',
     padding: 10,
     borderRadius: 5,
   },
+
   clearButton: {
     backgroundColor: '#f44336',
     padding: 10,
     borderRadius: 5,
   },
+
   buttonText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F8F8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  infoContainer: {
+    width: '100%',
+    marginBottom: 40,
+  },
+
+  infoText: {
+    fontSize: 18,
+    marginVertical: 8,
+  },
+
+  value: {
     fontWeight: 'bold',
   },
 });

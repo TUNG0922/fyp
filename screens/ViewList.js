@@ -47,7 +47,7 @@ const ViewList = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" color="#0000ff" />}
+      {loading && <ActivityIndicator size="large" color="#007BFF" />}
       {error && <Text style={styles.errorText}>{error}</Text>}
       {!loading && !error && users.length > 0 && (
         <FlatList
@@ -66,32 +66,32 @@ const ViewList = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: '#f9f9f9',
+    padding: 16,
+    backgroundColor: '#FAFAFA',
   },
   userItem: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    shadowRadius: 5,
     elevation: 3, // For Android
   },
   userName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   userEmail: {
     fontSize: 16,
-    color: '#555',
-    marginVertical: 5,
+    color: '#777',
+    marginTop: 4,
   },
   errorText: {
     fontSize: 16,
-    color: 'red',
+    color: '#D9534F',
     textAlign: 'center',
     marginTop: 20,
   },

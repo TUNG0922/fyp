@@ -51,10 +51,16 @@ print(list(past_activity_collection.find()))
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.get_json()
+    print(f"Received data: {data}")  # Log received data
+
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
     role = data.get('role')
+    strength = data.get('strength', '')  # Default to empty if not provided
+    previous_experiences = data.get('previous_experiences', '')  # Default to empty if not provided
+
+    print(f"Name: {name}, Email: {email}, Role: {role}, Strength: {strength}, Previous Experiences: {previous_experiences}")  # Log extracted fields
 
     if not all([name, email, password, role]):
         return jsonify({'message': 'All fields are required'}), 400
@@ -69,10 +75,14 @@ def signup():
             'name': name,
             'email': email,
             'password': hashed_password,
-            'role': role
+            'role': role,
+            'strength': strength,
+            'previous_experiences': previous_experiences
         })
+        print("User registered successfully")  # Log successful registration
         return jsonify({'message': 'User registered successfully'}), 201
     except Exception as e:
+        print(f"Error during registration: {str(e)}")  # Log error
         return jsonify({'message': 'An error occurred while registering the user', 'error': str(e)}), 500
 
 @app.route('/api/signin', methods=['POST'])

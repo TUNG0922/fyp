@@ -449,7 +449,6 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
     'Logout Confirmation',
     'Are you sure you want to log out?',
     [
-      { text: 'Cancel', style: 'cancel' },
       { 
         text: 'Yes', 
         onPress: async () => {
@@ -467,7 +466,8 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
             Alert.alert('Error', 'An error occurred while logging out. Please try again.');
           }
         }
-      }
+      },
+      { text: 'Cancel', style: 'cancel' }
     ]
   );
 };

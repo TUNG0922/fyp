@@ -7,45 +7,54 @@ const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Volunteer'); // Default role
+  const [strength, setStrength] = useState(''); // New field
+  const [previousExperiences, setPreviousExperiences] = useState(''); // New field
 
   const handleSignUp = async () => {
+    console.log('Sign Up button pressed');
+    console.log('Sending sign-up request to backend');
+  
     try {
-      console.log('Sign Up button pressed');
-      console.log('Sending sign-up request to backend');
+        const response = await fetch('http://10.0.2.2:5000/api/signup', { // Use 'http://localhost:5000/api/signup' for iOS Simulator
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                name, 
+                email, 
+                password, 
+                role, 
+                strength: strength || '',  // Handle empty strings
+                previous_experiences: previousExperiences || ''  // Handle empty strings
+            }),
+        });
   
-      const response = await fetch('http://10.0.2.2:5000/api/signup', { // Use 'http://localhost:5000/api/signup' for iOS Simulator
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password, role }),
-      });
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.log(`HTTP error! status: ${response.status} - ${errorText}`);  // Log HTTP error details
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
   
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
+        const data = await response.json();
+        console.log('Response data:', data);
   
-      const data = await response.json();
-      console.log('Response data:', data);
-  
-      if (data.message === 'User registered successfully') {
-        console.log('Sign up successful');
-        navigation.navigate('SignIn');
-      } else {
-        console.log('Sign-up failed:', data.message);
-        Alert.alert('Sign-up failed', data.message);
-      }
+        if (data.message === 'User registered successfully') {
+            console.log('Sign up successful');
+            Alert.alert('Success', 'Registration successful!');
+            navigation.navigate('SignIn');
+        } else {
+            console.log('Sign-up failed:', data.message);
+            Alert.alert('Sign-up failed', data.message);
+        }
     } catch (error) {
-      console.error('Error during sign-up:', error.message);
-      Alert.alert('Sign-up Error', 'There was a problem with registration.');
+        console.error('Error during sign-up:', error.message);
+        Alert.alert('Sign-up Error', 'There was a problem with registration.');
     }
-  };
-  
+};  
 
   return (
     <View style={styles.container}>
-      {/* Add "Create your account" on top */}
       <Text style={styles.headerText}>Create your account</Text>
 
       <Text style={styles.label}>Name</Text>
@@ -55,6 +64,7 @@ const SignUpScreen = ({ navigation }) => {
         value={name}
         onChangeText={setName}
       />
+
       <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
@@ -63,6 +73,7 @@ const SignUpScreen = ({ navigation }) => {
         onChangeText={setEmail}
         keyboardType="email-address"
       />
+
       <Text style={styles.label}>Password</Text>
       <TextInput
         style={styles.input}
@@ -71,6 +82,7 @@ const SignUpScreen = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
       />
+
       <Text style={styles.label}>Role</Text>
       <View style={styles.pickerContainer}>
         <Picker
@@ -82,9 +94,29 @@ const SignUpScreen = ({ navigation }) => {
           <Picker.Item label="Organization Admin" value="Organization Admin" />
         </Picker>
       </View>
+
+      {role === 'Volunteer' && (
+        <>
+          <Text style={styles.label}>Strength</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your strength"
+            value={strength}
+            onChangeText={setStrength}
+          />
+
+          <Text style={styles.label}>Previous Experiences</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter previous experiences"
+            value={previousExperiences}
+            onChangeText={setPreviousExperiences}
+          />
+        </>
+      )}
+
       <Button title="Sign Up" onPress={handleSignUp} color="#547DBE" />
 
-      {/* "Have an account? SIGN IN" text */}
       <View style={styles.signInContainer}>
         <Text style={styles.signInText}>Have an account?</Text>
         <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
@@ -100,7 +132,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#F5F5F5', // Background color
+    backgroundColor: '#F5F5F5',
   },
   headerText: {
     fontSize: 24,
@@ -113,28 +145,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
-    color: '#333', // Text color
+    color: '#333',
   },
   input: {
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 8, // Rounded corners
+    borderRadius: 8,
     marginBottom: 12,
     paddingHorizontal: 8,
-    backgroundColor: '#fff', // Background color
+    backgroundColor: '#fff',
   },
   pickerContainer: {
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 8, // Rounded corners
+    borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: '#fff', // Background color
-    overflow: 'hidden', // Ensures rounded corners are visible
-    height: 60, // Increase height
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    height: 60,
   },
   picker: {
-    height: '100%', // Full height of the container
+    height: '100%',
     width: '100%',
   },
   signInContainer: {
@@ -144,12 +176,12 @@ const styles = StyleSheet.create({
   },
   signInText: {
     fontSize: 16,
-    color: '#333', // Regular text color
+    color: '#333',
     fontWeight: 'bold',
   },
   signInLink: {
     fontSize: 16,
-    color: '#00BFAE', // Green color for the link
+    color: '#00BFAE',
     fontWeight: 'bold',
   },
 });
