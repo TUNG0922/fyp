@@ -23,23 +23,30 @@ const ViewChat = ({ route }) => {
 
     // Fetch chat messages for the activity
     fetchMessages();
-  }, [activity._id]); // Dependency array ensures this runs when activity._id changes
+
+    // Set up a timer to refresh messages every second
+    const interval = setInterval(() => {
+        fetchMessages();
+    }, 8000);
+
+        return () => clearInterval(interval); // Clean up interval on component unmount
+    }, [activity._id]); // Dependency array ensures this runs when activity._id changes
 
   // Function to fetch messages for the activity
   const fetchMessages = async () => {
     setLoading(true);
     setError(null);
-
+  
     try {
       console.log(`Fetching messages for activityId: ${activity._id}`);
-
+  
       const response = await fetch(
         `http://10.0.2.2:5000/api/getMessagesList?activityId=${activity._id}`
       );
       const data = await response.json();
-
+  
       if (response.ok) {
-        console.log("Fetched messages:", data.messages); // Log the response from backend
+        console.log("Fetched messages:", data); // Log the entire response to verify `userId`
         setMessages(data.messages || []);
       } else {
         setError(data.error || 'Failed to load messages');
@@ -50,25 +57,32 @@ const ViewChat = ({ route }) => {
     } finally {
       setLoading(false);
     }
+  };  
+
+  // Navigation to Chatbox with userId, messages, and activity
+  const handleNavigateToChatbox = (userId) => {
+    console.log("Navigating to Chatbox with details:");
+    console.log("Selected UserId:", userId); // Verify the userId is passed correctly
+    console.log("Activity:", activity);
+    console.log("Messages:", messages);
+  
+    navigation.navigate('Chatbox', {
+      activity,  // Pass the entire activity object
+      messages,  // Pass the messages object or array
+      userId,    // Pass the userId for the selected message
+    });
   };
 
-  const handleNavigateToChatbox = () => {
-    console.log("Navigating to Chatbox with activity and messages:", activity, messages);
-  
-    // Pass the entire activity object and messages to the Chatbox
-    navigation.navigate('Chatbox', {
-        activity,  // Pass the entire activity object
-        messages,  // Pass the messages object or array
-    });
-};
-
-
+  // Render each message in the list
   const renderMessageItem = ({ item }) => {
-    console.log("Rendering message item:", item);  // Log the message item
+    console.log("Rendering message item with userId:", item.userId || item.user_id); // Check for alternative key names
   
     return (
       <TouchableOpacity
-        onPress={handleNavigateToChatbox}  // Call the function without passing item
+        onPress={() => {
+          console.log("Selected UserId:", item.userId || item.user_id); // Log the userId
+          handleNavigateToChatbox(item.userId || item.user_id); // Pass the userId to the function
+        }}
         style={styles.messageItem}
       >
         <FontAwesome5 name="user-circle" size={36} color="#4CAF50" style={styles.messageIcon} />

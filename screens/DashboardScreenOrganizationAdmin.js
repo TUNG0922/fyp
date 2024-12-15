@@ -28,7 +28,7 @@ const HomeScreen = ({ route }) => {
         setJoinedActivities(userJoinedActivities);
       }
     } catch (error) {
-      console.error('Fetch activities error:', error);
+      // Error is already handled through alert
     } finally {
       setLoading(false);
     }
@@ -167,22 +167,29 @@ const HomeScreen = ({ route }) => {
                   <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
                   <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
                   <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+
+                  {/* Name Label and Value */}
+                  <Text style={styles.labelText}>Name</Text>
                   <Text style={styles.userNameText}>{item.username || 'Unknown User'}</Text>
+
+                  {/* Email Label and Value */}
+                  <Text style={styles.labelText}>Email</Text>
                   <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
                 </View>
                 <View style={{ flexDirection: 'row' }}>
-                  <TouchableOpacity 
-                    style={[styles.button, { backgroundColor: '#4CAF50', marginRight: 10 }]} // Green color for Accept
-                    onPress={() => handleAccept(item.activity_id)}  // Use correct ID field
-                  >
-                    <Text style={styles.buttonText}>Accept</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.button, { backgroundColor: '#FF4B4B' }]} // Red color for Reject
-                    onPress={() => handleReject(item.activity_id)}  // Use correct ID field
-                  >
-                    <Text style={styles.buttonText}>Reject</Text>
-                  </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.acceptButton} 
+                  onPress={handleAccept}
+                >
+                  <Text style={styles.buttonText}>Accept</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.rejectButton} 
+                  onPress={() => handleReject(item.activity_id)} 
+                >
+                  <Text style={styles.buttonText}>Reject</Text>
+                </TouchableOpacity>
                 </View>
               </View>
             </TouchableOpacity>
@@ -195,7 +202,10 @@ const HomeScreen = ({ route }) => {
 };
 
 const DiscoverScreen = ({ route, navigation }) => {
-  const { username, userId } = route.params; // Passed from the previous screen
+  const { username, userId, role } = route.params; // Passed from the previous screen
+  console.log(`Username: ${username}`);
+  console.log(`User ID: ${userId}`);
+  console.log(`Role: ${role}`);
   const [isFormVisible, setFormVisible] = useState(false);
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -223,7 +233,6 @@ const DiscoverScreen = ({ route, navigation }) => {
         Alert.alert('Error', data.error || 'Failed to fetch activities');
       }
     } catch (error) {
-      console.error('Error fetching activities:', error);
       Alert.alert('Error', 'Could not fetch activities');
     } finally {
       setLoading(false);
@@ -333,6 +342,7 @@ const DiscoverScreen = ({ route, navigation }) => {
       activity,
       userId,
       username,
+      role,
     });
   };
 
@@ -537,11 +547,11 @@ const DiscoverScreen = ({ route, navigation }) => {
 
       {/* Cancel and Submit Buttons */}
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>Submit</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
       </ScrollView>
@@ -589,24 +599,24 @@ const ProfileScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>Name: <Text style={styles.value}>{username}</Text></Text>
-        <Text style={styles.infoText}>Email: <Text style={styles.value}>{email}</Text></Text>
-        <Text style={styles.infoText}>Role: <Text style={styles.value}>{role}</Text></Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-          <Text style={styles.buttonText}>Edit Profile</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.infoContainer}>
+      <Text style={styles.infoText}>Name: <Text style={styles.value}>{username}</Text></Text>
+      <Text style={styles.infoText}>Email: <Text style={styles.value}>{email}</Text></Text>
+      <Text style={styles.infoText}>Role: <Text style={styles.value}>{role}</Text></Text>
     </View>
-  );
-};
+
+    <View style={styles.buttonsRow}>
+      <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+        <Text style={styles.buttonText}>Edit Profile</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+    );
+  };
 
 const Tab = createBottomTabNavigator();
 
@@ -615,54 +625,60 @@ const DashboardScreenOrganizationAdmin = ({ route }) => {
 
   return (
     <Tab.Navigator
-      initialRouteName="Discover"
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
-          let iconName;
-          if (route.name === 'Home') {
-            iconName = 'home';
-          } else if (route.name === 'Discover') {
-            iconName = 'compass';
-          } else if (route.name === 'Profile') {
-            iconName = 'user';
-          } else if (route.name === 'Notifications') {
-            iconName = 'bell';
-          }
-          return <Icon name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#00BFAE',
-        tabBarInactiveTintColor: '#888',
-        tabBarStyle: {
-          backgroundColor: '#547DBE',
-          borderTopWidth: 0,
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ headerShown: false }}
-        initialParams={{ username, userId }} // Passing username and userId
-      />
-      <Tab.Screen
-        name="Discover"
-        component={DiscoverScreen}
-        options={{ headerShown: false }}
-        initialParams={{ username, userId }} // Passing username and userId
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ headerShown: false }}
-        initialParams={{ username, userId, password, email, role }} // Passing profile details
-      />
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationOrganizationAdmin}
-        options={{ headerShown: false }}
-        initialParams={{ username, userId }} // Passing username and userId
-      />
-    </Tab.Navigator>
+    initialRouteName="Discover"
+    screenOptions={({ route }) => ({
+      tabBarIcon: ({ color, size }) => {
+        let iconName;
+        if (route.name === 'Home') {
+          iconName = 'home';
+        } else if (route.name === 'Discover') {
+          iconName = 'compass';
+        } else if (route.name === 'Profile') {
+          iconName = 'user';
+        } else if (route.name === 'Notifications') {
+          iconName = 'bell';
+        }
+        return <Icon name={iconName} size={size} color={color} />;
+      },
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginTop: 5,
+        color: '#FFFFFF', // Ensures text color is white for visibility
+      },
+      tabBarActiveTintColor: '#00BFAE', // Active icon/text color
+      tabBarInactiveTintColor: '#CCCCCC', // Inactive icon/text color
+      tabBarStyle: {
+        backgroundColor: '#2C3E50', // Darker background color for visibility
+        borderTopWidth: 0,
+      },
+    })}
+  >
+    <Tab.Screen
+      name="Home"
+      component={HomeScreen}
+      options={{ headerShown: false }}
+      initialParams={{ username, userId, role }}
+    />
+    <Tab.Screen
+      name="Discover"
+      component={DiscoverScreen}
+      options={{ headerShown: false }}
+      initialParams={{ username, userId, role }}
+    />
+    <Tab.Screen
+      name="Profile"
+      component={ProfileScreen}
+      options={{ headerShown: false }}
+      initialParams={{ username, userId, password, email, role }}
+    />
+    <Tab.Screen
+      name="Notifications"
+      component={NotificationOrganizationAdmin}
+      options={{ headerShown: false }}
+      initialParams={{ username, userId }}
+    />
+  </Tab.Navigator>
   );
 };
 
@@ -755,13 +771,14 @@ const styles = StyleSheet.create({
   userNameText: {
     fontSize: 14,
     fontWeight: 'bold',
-    marginTop: 5,
     color: '#333',
   },
 
   userEmailText: {
-    fontSize: 12,
-    color: '#555',
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+
   },
   
   // Delete Button Styles
@@ -833,38 +850,39 @@ const styles = StyleSheet.create({
   // Floating Add Button
   addButton: {
     backgroundColor: '#00BFAE',
-    borderRadius: 50,
-    padding: 15,
+    borderRadius: 8,  // Slightly rounded corners
+    paddingVertical: 10,  // Vertical padding
+    paddingHorizontal: 20,  // Horizontal padding
     position: 'absolute',
     bottom: 20,
     right: 20,
-    elevation: 5,
+    elevation: 8,                // Increased shadow elevation
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   
   // Button Container for Layout
   buttonContainer: {
-    flexDirection: 'row', // Align buttons horizontally
-    justifyContent: 'space-between', // Space the buttons evenly
-    marginTop: 20, // Adds top margin to separate from the form
-    width: '100%', // Ensures buttons take up full width for alignment
-    marginBottom: 40, // Reduced vertical space here
-  },   
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   
-  // Cancel Button
-  cancelButton: {
-    backgroundColor: '#FF4B4B',
-    borderRadius: 10,
-    padding: 12,
-    flex: 1,
-    marginHorizontal: 5,
-    alignItems: 'center',
+  buttonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 
-  cancelButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  // Cancel Button
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 50,           // Added padding below buttons
   },
   
   // Selected Image
@@ -877,26 +895,26 @@ const styles = StyleSheet.create({
   
   // Logout Button
   logoutButton: {
-    backgroundColor: '#FF4B4B',  // Vibrant red color
+    backgroundColor: '#FF6347',
     padding: 15,
-    borderRadius: 10,
     alignItems: 'center',
-    marginVertical: 10,  // Adjusting margin for consistency
+    borderRadius: 5,
+    flex: 1,
   },
 
   logoutButtonText: {
-    color: '#fff',  // White text color for contrast
-    fontWeight: 'bold',
+    color: '#fff',
     fontSize: 16,
-    textAlign: 'center',
   },
 
   // Edit Button
   editButton: {
-    backgroundColor: '#4CAF50',  // Green color for edit button
+    backgroundColor: '#547DBE',
     padding: 15,
-    borderRadius: 10,
-    marginHorizontal: 5,  // Adjusting margin to align with other buttons
+    alignItems: 'center',
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 10,
   },
 
   editButtonText: {
@@ -907,25 +925,16 @@ const styles = StyleSheet.create({
   },
 
   submitButton: {
-    backgroundColor: '#00BFAE', // Vibrant green color
-    borderRadius: 12, // Rounded corners for a modern look
-    paddingVertical: 15, // Increased padding for better spacing
-    paddingHorizontal: 30, // Horizontal padding to make the button wider
+    backgroundColor: '#547DBE',
+    padding: 15,
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 5, // Adds shadow for depth
-    shadowColor: '#000', // Shadow color for better contrast
-    shadowOpacity: 0.2, // Slightly stronger shadow opacity
-    shadowOffset: { width: 0, height: 4 }, // Shadow offset to make it look elevated
-    shadowRadius: 5, // Shadow blur radius
-    flex: 1, // Ensures buttons have equal width
-    marginHorizontal: 5, // Small margin between buttons
+    borderRadius: 5,
+    flex: 1,
   },
 
   submitButtonText: {
-    color: '#fff', // White text for contrast
-    fontWeight: 'bold',
-    fontSize: 16, // Slightly larger font size
+    color: '#fff',
+    fontSize: 16,
   },
   
   cancelButton: {
@@ -1018,30 +1027,51 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    padding: 30,
+    backgroundColor: '#fff',
   },
 
   infoContainer: {
-    width: '100%',
-    marginBottom: 40,
+    marginBottom: 30,
   },
 
   infoText: {
-    fontSize: 18,
-    marginVertical: 8,
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
   },
 
   value: {
     fontWeight: 'bold',
   },
+
+  acceptButton: {
+    backgroundColor: '#00BFAE',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    elevation: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rejectButton: {
+    backgroundColor: '#FF4B4B',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    elevation: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spacing: {
+    width: 10,  // Adjust as needed
+  }
 });
 
 export default DashboardScreenOrganizationAdmin;

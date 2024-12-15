@@ -512,7 +512,7 @@ const DashboardScreenVolunteer = ({ route }) => {
   console.log('Previous Experiences:', previous_experiences); // Log previous experiences
 
   return (
-    <Tab.Navigator>
+    <Tab.Navigator initialRouteName="Discover">
       <Tab.Screen 
         name="Home" 
         children={() => (

@@ -1,4 +1,3 @@
-// App.js
 import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -18,8 +17,8 @@ import EditProfileOrganizationAdmin from './screens/EditProfileOrganizationAdmin
 import ChatActivity from './screens/ChatActivity';
 import ViewList from './screens/ViewList';
 import ViewChat from './screens/ViewChat';
-import Chatbox from './screens/Chatbox'; // Register Chatbox.js
-import VolunteerHistory from './screens/VolunteerHistory'; // Register VolunteerHistory.js
+import Chatbox from './screens/Chatbox'; 
+import VolunteerHistory from './screens/VolunteerHistory'; 
 import ViewReport from './screens/ViewReport';
 
 const Stack = createStackNavigator();
@@ -43,14 +42,14 @@ export default function App() {
         initialRouteName="SignIn"
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#547DBE',
+            backgroundColor: '#2C3E50', // Matching app-wide blue color
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.3,
             shadowRadius: 4,
             elevation: 5,
           },
-          headerTintColor: '#fff',
+          headerTintColor: '#fff', // Text color for header
           headerTitleAlign: 'center',
           headerTitleStyle: {
             fontWeight: 'bold',
@@ -58,16 +57,8 @@ export default function App() {
         }}
       >
         {/* Authentication Screens */}
-        <Stack.Screen
-          name="SignIn"
-          component={SignInScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="SignUp"
-          component={SignUpScreen}
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="SignIn" component={SignInScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
 
         {/* Dashboard Screens */}
         <Stack.Screen
@@ -75,7 +66,7 @@ export default function App() {
           component={DashboardScreenVolunteer}
           options={{
             headerTitle: () => <LogoTitle />,
-            headerLeft: () => null, // Disables back button for just this screen
+            headerLeft: () => null, // Disables back button
           }}
         />
         <Stack.Screen
@@ -90,7 +81,7 @@ export default function App() {
           component={DashboardScreenOrganizationAdmin}
           options={{
             headerTitle: () => <LogoTitle />,
-            headerLeft: () => null, // Disables back button for just this screen
+            headerLeft: () => null, // Disables back button
           }}
         />
 
@@ -110,12 +101,13 @@ export default function App() {
           }}
         />
         <Stack.Screen
-                  name="ViewReport"
-                  component={ViewReport} // Register the new ViewReport screen
-                  options={{
-                    headerTitle: 'View Report',
-                  }}
-                />
+          name="ViewReport"
+          component={ViewReport}
+          options={{
+            headerTitle: 'View Report',
+          }}
+        />
+
         {/* Notification Screens */}
         <Stack.Screen
           name="NotificationVolunteer"
@@ -160,7 +152,7 @@ export default function App() {
           name="Chatbox"
           component={Chatbox}
           options={({ route }) => ({
-            headerTitle: route.params?.name || 'Chatbox', // Use the name from route.params, default to 'Chatbox'
+            headerTitle: route.params?.name || 'Chatbox',
           })}
         />
 
@@ -169,7 +161,6 @@ export default function App() {
           name="ViewList"
           component={ViewList}
           options={{
-            headerLeft: () => null, // Disables back button for just this screen
             headerTitle: 'View List',
           }}
         />
@@ -192,15 +183,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#2C3E50', // Blue background
+    padding: 10, // Add padding around the container
+    borderRadius: 10, // Rounded edges for a clean look
   },
   logoImage: {
     width: 30,
     height: 30,
-    marginRight: 10,
+    marginRight: 10, // Space between logo and text
   },
   logoText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFFFFF', // White text for contrast
   },
 });

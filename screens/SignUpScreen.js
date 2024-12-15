@@ -108,7 +108,7 @@ const SignUpScreen = ({ navigation }) => {
           <Text style={styles.label}>Previous Experiences</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter previous experiences"
+            placeholder="Enter your previous experiences"
             value={previousExperiences}
             onChangeText={setPreviousExperiences}
           />

@@ -95,6 +95,26 @@ const ActivityDetailsVolunteer = () => {
     }
   };
 
+  const handleDeleteReview = async (reviewId) => {
+    try {
+      const response = await fetch(`http://10.0.2.2:5000/api/delete_review/${reviewId}`, {
+        method: 'DELETE',
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        alert(data.message || 'Review deleted successfully');
+        // Optionally, refresh the reviews list after deletion
+        // fetchReviews(); // Replace with your function to reload the reviews
+      } else {
+        alert(data.message || 'Failed to delete the review');
+      }
+    } catch (error) {
+      alert('An error occurred while deleting the review');
+      console.error(error);
+    }
+  };  
+
   const handleJoinActivity = async () => {
     if (!userId || !activity._id || !activity.name || !email || !image || !activity.userId) {
       Alert.alert('Error', 'All required fields must be filled out.');
@@ -140,6 +160,7 @@ const ActivityDetailsVolunteer = () => {
 
   const goToChat = () => {
     navigation.navigate('ChatActivity', {
+      activity: activity, // Pass the entire activity object
       activityId: activity._id,
       userId: userId,
       name: name,
@@ -151,25 +172,33 @@ const ActivityDetailsVolunteer = () => {
     const reviewReplies = replies[item._id] || [];
 
     return (
-      <View style={styles.reviewItem}>
+      <View style={styles.reviewContainer}>
+        {/* Review Content */}
+        <View style={styles.reviewHeader}>
+          <Text style={styles.reviewAuthor}>{item.name}</Text>
+          <Text style={styles.reviewDate}>{item.date}</Text>
+        </View>
         <Text style={styles.reviewText}>{item.text}</Text>
-        <Text style={styles.reviewDate}>{item.date}</Text>
-        <Text style={styles.reviewAuthor}>{item.name}</Text>
         <AirbnbRating
-          size={20}
+          size={16}
           isDisabled
           showRating={false}
           defaultRating={item.rating}
           starContainerStyle={styles.ratingStars}
         />
-    
-        <TouchableOpacity onPress={() => handleDeleteReview(item._id)} style={styles.deleteButton}>
+  
+        {/* Delete Button */}
+        <TouchableOpacity 
+          onPress={() => handleDeleteReview(item._id ? item._id : null)} 
+          style={styles.deleteButton}
+        >
           <Text style={styles.deleteButtonText}>Delete Review</Text>
         </TouchableOpacity>
-
-        {/* Render replies */}
+  
+        {/* Replies Section */}
         {reviewReplies.length > 0 && (
           <View style={styles.repliesContainer}>
+            <Text style={styles.repliesHeader}>Replies:</Text>
             {reviewReplies.map((reply) => (
               <View key={reply.replyId} style={styles.replyItem}>
                 <Text style={styles.replyAuthor}>{reply.author}</Text>
@@ -292,6 +321,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 5,
   },
+  reviewContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   reviewInput: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -306,18 +352,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-  reviewText: {
+  reviewAuthor: {
     fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
   },
   reviewDate: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 4,
+    color: '#888888',
   },
-  reviewAuthor: {
+  reviewText: {
     fontSize: 14,
-    color: '#333',
-    marginTop: 4,
+    color: '#555555',
+    marginVertical: 8,
   },
   loadingContainer: {
     flex: 1,
@@ -325,29 +372,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButton: {
-    marginTop: 10,
-    backgroundColor: '#ff5252',
-    padding: 8,
+    backgroundColor: '#FF6B6B',
     borderRadius: 5,
-    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-end',
+    marginTop: 10,
   },
   deleteButtonText: {
-    color: '#fff',
     fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
   },
   repliesContainer: {
-    marginTop: 10,
-    paddingLeft: 20,
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingTop: 8,
+  },
+  repliesHeader: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 8,
   },
   replyItem: {
-    marginBottom: 5,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 5,
+    padding: 10,
+    marginVertical: 4,
   },
   replyAuthor: {
+    fontSize: 13,
     fontWeight: 'bold',
+    color: '#555555',
   },
   replyText: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: 13,
+    color: '#666666',
+    marginTop: 4,
+  },
+  ratingStars: {
+    alignSelf: 'flex-start',
+    marginVertical: 8,
   },
 });
 

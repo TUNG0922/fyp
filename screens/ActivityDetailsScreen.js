@@ -8,7 +8,12 @@ import { View, Text, StyleSheet, Image, Alert, FlatList, ActivityIndicator, Touc
 import { Rating } from 'react-native-ratings';
 
 const ActivityDetailsScreen = ({ route, navigation }) => {
-  const { activity, userId, username } = route.params;
+  const { activity, userId, username, role } = route.params;
+  console.log(`Activity:`, activity);
+  console.log(`User ID: ${userId}`);
+  console.log(`Username: ${username}`);
+  console.log(`Role: ${role}`);
+
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

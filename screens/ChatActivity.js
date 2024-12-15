@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 
 const ChatActivity = ({ route }) => {
-  const { activityId, userId, name, role } = route.params || {};
+  const { activity, activityId, userId, name, role } = route.params || {};
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -12,6 +12,9 @@ const ChatActivity = ({ route }) => {
 
   // Reference to FlatList to scroll to the bottom
   const flatListRef = useRef();
+
+  // Ensure activity_user_id is set correctly
+  const activity_user_id = activity.userId;  // Assuming userId represents the activity_user_id
 
   // Fetch messages from the backend
   const fetchMessages = async () => {
@@ -24,8 +27,6 @@ const ChatActivity = ({ route }) => {
       }
 
       const data = await response.json();
-      console.log("Fetched messages:", data); // Debug: log the response
-
       if (Array.isArray(data)) {
         setMessages(data);
       } else {
@@ -50,6 +51,7 @@ const ChatActivity = ({ route }) => {
     const messageData = {
       userId,
       activityId,
+      activity_user_id,
       message: newMessage,
       name,
       role,
@@ -70,7 +72,7 @@ const ChatActivity = ({ route }) => {
           ...prevMessages,
           { ...messageData, createdAt: new Date().toISOString() },
         ]);
-        setNewMessage('');
+        setNewMessage(''); // Clear the input field
         flatListRef.current.scrollToEnd({ animated: true });
       } else {
         setError(data.error || 'Failed to send message');
@@ -91,11 +93,11 @@ const ChatActivity = ({ route }) => {
   
     return (
       <View
-        style={[ 
+        style={[
           styles.messageItem,
           {
-            alignSelf: isVolunteer ? 'flex-end' : 'flex-start',  // Display volunteer's messages on the right (flex-end), and organization admin's on the left (flex-start)
-            backgroundColor: isVolunteer ? '#00BFAE' : '#f1f1f1',  // Set background color based on role
+            alignSelf: isVolunteer ? 'flex-end' : 'flex-start',
+            backgroundColor: isVolunteer ? '#00BFAE' : '#f1f1f1',
           },
         ]}
       >
@@ -106,7 +108,7 @@ const ChatActivity = ({ route }) => {
           {item.message}
         </Text>
         <Text style={[styles.messageDate, { textAlign: isVolunteer ? 'right' : 'left' }]}>
-          {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
       </View>
     );

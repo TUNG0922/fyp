@@ -823,8 +823,9 @@ def get_user_list():
     
 @app.route('/api/getMessagesList', methods=['GET'])
 def get_messages_list():
-    activity_id = request.args.get('activityId')
+    activity_id = request.args.get('activityId')  # Get activityId from query parameters
     print(f"Received activityId: {activity_id}")  # Debug log
+    
     if not activity_id:
         return jsonify({'error': 'activityId is required'}), 400
 
@@ -832,23 +833,24 @@ def get_messages_list():
         # Fetch all messages for the given activityId
         messages_cursor = mongo.db.messages.find({"activityId": activity_id})
         messages_list = []
-
-        # Use a set to track unique userIds
-        seen_user_ids = set()
+        seen_user_ids = set()  # Track unique userIds
 
         for msg in messages_cursor:
             user_id = msg.get("userId")
-            if user_id not in seen_user_ids:  # Check if userId is unique
-                seen_user_ids.add(user_id)  # Add to the set
+            # Add to the list only if the userId is unique
+            if user_id and user_id not in seen_user_ids:
+                seen_user_ids.add(user_id)
                 messages_list.append({
-                    "_id": str(msg["_id"]),
-                    "name": msg.get("name", "Unknown"),
+                    "userId": user_id,  # Include the unique userId
+                    "name": msg.get("name", "Unknown"),  # Fallback name if not available
+                    "_id": str(msg["_id"]),  # Convert _id to string
                 })
 
-        print(f"Filtered Messages: {messages_list}")  # Log filtered messages
-        return jsonify({'messages': messages_list}), 200
+        print(f"Filtered Messages: {messages_list}")  # Debug log
+        return jsonify({'messages': messages_list}), 200  # Send filtered messages
 
     except Exception as e:
+        # Log the exception for debugging
         print(f"Error retrieving messages: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
     
