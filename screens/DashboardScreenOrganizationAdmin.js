@@ -40,28 +40,39 @@ const HomeScreen = ({ route }) => {
 
   const handleAccept = async (activityId) => {
     try {
-      console.log("Sending activityId:", activityId);  // Confirm the ID being sent
-      if (!activityId) {
-        throw new Error("Activity ID is missing");
-      }
+        console.log("Sending activityId:", activityId); // Confirm the ID being sent
 
-      const response = await axios.post(
-        'http://10.0.2.2:5000/api/accept_activity',
-        { join_activity_id: activityId },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+        if (!activityId) {
+            Alert.alert('Error', 'No activity ID provided.');
+            return; // Exit the function early instead of throwing an error
+        }
 
-      if (response.data.message === 'Activity moved to completed') {
-        Alert.alert('Accepted', 'The activity has been accepted successfully!');
-        setJoinedActivities((prevActivities) =>
-          prevActivities.filter((activity) => activity.activity_id !== activityId)  // Correct field name
+        const response = await axios.post(
+            'http://10.0.2.2:5000/api/accept_activity',
+            { join_activity_id: activityId }, // Ensure the key matches the backend
+            { headers: { 'Content-Type': 'application/json' } }
         );
-      }
+
+        console.log('Response:', response.data);
+
+        if (response.data.message === 'Activity moved to completed') {
+            Alert.alert('Accepted', 'The activity has been accepted successfully!');
+            setJoinedActivities((prevActivities) =>
+                prevActivities.filter((activity) => activity.activity_id !== activityId) // Correct field name
+            );
+        }
     } catch (error) {
-      console.error('Error accepting activity:', error);
-      Alert.alert('Error', 'Failed to accept the activity. Please try again.');
+        console.error('Error accepting activity:', error);
+
+        if (error.response) {
+            Alert.alert('Error', error.response.data.message || 'Server error. Please try again.');
+        } else if (error.request) {
+            Alert.alert('Error', 'Network error. Please check your connection.');
+        } else {
+            Alert.alert('Error', 'Unexpected error occurred.');
+        }
     }
-  };  
+};
 
   const handleReject = async (activityId) => {
     try {
@@ -177,9 +188,9 @@ const HomeScreen = ({ route }) => {
                   <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
                 </View>
                 <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity 
-                  style={styles.acceptButton} 
-                  onPress={handleAccept}
+                <TouchableOpacity
+                  style={styles.acceptButton}
+                  onPress={() => handleAccept(item.activity_id)}
                 >
                   <Text style={styles.buttonText}>Accept</Text>
                 </TouchableOpacity>
