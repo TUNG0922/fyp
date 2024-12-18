@@ -205,7 +205,7 @@ const ActivityDetailsScreen = ({ route, navigation }) => {
             <Text style={styles.buttonText}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleViewListPress}>
-            <Text style={styles.buttonText}>View List</Text>
+            <Text style={styles.buttonText}>View Volunteer</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={handleViewChatPress}>
             <Text style={styles.buttonText}>View Chat</Text>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -6,15 +6,41 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 const ActivityDetailsVolunteer = () => {
   const navigation = useNavigation();
   const route = useRoute();
-
-  const { activity, userId, name, email, image, role = 'Volunteer', strength, previous_experiences } = route.params || {};
+  const flatListRef = useRef(null);
+  
+  // State to handle chat button visibility
+  const [chatButtonBottom, setChatButtonBottom] = useState(16);
+  const { activity, userId, name, email, image, role = 'Volunteer', strength, previous_experiences, interest } = route.params || {};
   console.log('User ID:', userId);  // Add this line
+  console.log("Interest", interest);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [replies, setReplies] = useState({});  // State to store replies by review ID
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
   const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const handleScroll = (event) => {
+      const contentHeight = event.nativeEvent.contentSize.height;
+      const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+      const offsetY = event.nativeEvent.contentOffset.y;
+
+      const distanceFromBottom = contentHeight - (layoutHeight + offsetY);
+      
+      // Adjust chat button's position to follow the bottom of the screen
+      if (distanceFromBottom < 100) { // 100 is a buffer
+        setChatButtonBottom(16 + distanceFromBottom); // Stick near the bottom
+      } else {
+        setChatButtonBottom(16); // Reset to default
+      }
+    };
+
+    flatListRef.current?.addEventListener('scroll', handleScroll);
+
+    return () => {
+      flatListRef.current?.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,12 +142,13 @@ const ActivityDetailsVolunteer = () => {
   };  
 
   const handleJoinActivity = async () => {
-    if (!userId || !activity._id || !activity.name || !email || !image || !activity.userId) {
+    // Check for all required fields
+    if (!userId || !activity._id || !activity.name || !email || !image || !activity.userId || !strength || !interest || !activity.genre) {
       Alert.alert('Error', 'All required fields must be filled out.');
       return;
     }
-
-    // Include strength and previous_experiences in joinActivityData
+  
+    // Include strength and interest in joinActivityData
     const joinActivityData = {
       user_id: userId,
       username: name,
@@ -132,10 +159,15 @@ const ActivityDetailsVolunteer = () => {
       date: activity.date,
       image: image,
       activity_user_id: activity.userId,
-      strength: strength,                // Add strength
-      previous_experiences: previous_experiences  // Add previous_experiences
+      genre: activity.genre, // Add genre
+      strength: strength, // Add strength
+      interest: interest, // Add interest
+      previous_experiences: previous_experiences, // Add previous_experiences
     };
-
+  
+    // Log the payload before sending the request
+    console.log('Join Activity Payload:', joinActivityData);
+  
     try {
       const response = await fetch('http://10.0.2.2:5000/api/join_activity', {
         method: 'POST',
@@ -144,19 +176,20 @@ const ActivityDetailsVolunteer = () => {
         },
         body: JSON.stringify(joinActivityData),
       });
-
+  
       const result = await response.json();
-
+  
       if (response.ok) {
-        setHasJoined(true);  // Update join status immediately after success
+        setHasJoined(true); // Update join status immediately after success
         Alert.alert('Success', 'You have joined the activity. Please wait for confirmation.');
       } else {
         Alert.alert('Error', result.message || 'Failed to join the activity.');
       }
     } catch (error) {
+      console.error('Join Activity Error:', error);
       Alert.alert('Error', 'An error occurred while joining the activity.');
     }
-  };
+  };  
 
   const goToChat = () => {
     navigation.navigate('ChatActivity', {
@@ -165,6 +198,7 @@ const ActivityDetailsVolunteer = () => {
       userId: userId,
       name: name,
       role: role,
+      defaultMessage: 'What can I help you?' // Default message
     });
   };
 
@@ -232,10 +266,6 @@ const ActivityDetailsVolunteer = () => {
           <Text style={styles.activityLocation}>{activity.location}</Text>
           <Text style={styles.activityDate}>{activity.date}</Text>
 
-          <TouchableOpacity onPress={goToChat} style={styles.chatButton}>
-            <Text style={styles.chatButtonText}>Chat</Text>
-          </TouchableOpacity>
-
           {!hasJoined && (
             <TouchableOpacity onPress={handleJoinActivity} style={styles.joinButton}>
               <Text style={styles.joinButtonText}>Join Activity</Text>
@@ -254,8 +284,13 @@ const ActivityDetailsVolunteer = () => {
             placeholder="Write a review..."
           />
           <Button title="Add Review" onPress={handleAddReview} />
+
+          {/* Chat Button follows scroll and remains fixed at bottom-right */}
+          <TouchableOpacity onPress={goToChat} style={[styles.chatButton, { bottom: chatButtonBottom }]}>
+            <Text style={styles.chatButtonText}>Chat</Text>
+          </TouchableOpacity>
         </View>
-      }
+      }     
     />
   );
 };
@@ -290,17 +325,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginBottom: 20,
-  },
-  chatButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  chatButtonText: {
-    color: '#fff',
-    fontSize: 18,
   },
   joinButton: {
     backgroundColor: '#00BFAE',
@@ -416,6 +440,32 @@ const styles = StyleSheet.create({
   ratingStars: {
     alignSelf: 'flex-start',
     marginVertical: 8,
+  },
+  chatButtonContainer: {
+    position: 'absolute',
+    right: 16,
+    bottom: 16,
+    zIndex: 10,
+  },
+  chatButton: {
+    position: 'absolute',
+    right: 16,
+    backgroundColor: '#007BFF',
+    padding: 15,
+    borderRadius: 50,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  chatButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

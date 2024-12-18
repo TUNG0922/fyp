@@ -2,9 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, Button, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 
 const ChatActivity = ({ route }) => {
-  const { activity, activityId, userId, name, role } = route.params || {};
+  const { activity, activityId, userId, name, role} = route.params || {};
 
-  const [messages, setMessages] = useState([]);
+  console.log('Route Params:', { activity, activityId, userId, name, role });
+
+  const [messages, setMessages] = useState([{ 
+    _id: 'default_message', 
+    message: 'Welcome to the chat! How can we help you today?', 
+    name: activity.name, 
+    role: 'Admin', 
+    createdAt: new Date().toISOString() 
+  }]);  
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -28,7 +36,16 @@ const ChatActivity = ({ route }) => {
 
       const data = await response.json();
       if (Array.isArray(data)) {
-        setMessages(data);
+        setMessages((prevMessages) => [
+          { 
+            _id: 'default_message', 
+            message: 'Welcome to the chat! How can we help you today?', 
+            name: activity.name, 
+            role: 'Admin', 
+            createdAt: new Date().toISOString() 
+          },
+          ...data
+        ]);
       } else {
         setError('Invalid message data format');
       }
@@ -165,7 +182,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     borderRadius: 8,
-    maxWidth: '95%',
+    maxWidth: '65%',  // Adjust the max width for a smaller message box
   },
   messageAuthor: {
     fontWeight: 'bold',

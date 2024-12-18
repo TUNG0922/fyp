@@ -53,32 +53,46 @@ def signup():
     data = request.get_json()
     print(f"Received data: {data}")  # Log received data
 
+    # Extract data fields from the request
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')
     role = data.get('role')
+    interest = data.get('interest', '')  # New field
     strength = data.get('strength', '')  # Default to empty if not provided
     previous_experiences = data.get('previous_experiences', '')  # Default to empty if not provided
 
-    print(f"Name: {name}, Email: {email}, Role: {role}, Strength: {strength}, Previous Experiences: {previous_experiences}")  # Log extracted fields
+    # Log extracted fields for debugging
+    print(f"Name: {name}, Email: {email}, Role: {role}, Interest: {interest}, Strength: {strength}, Previous Experiences: {previous_experiences}")
 
+    # Validate required fields
     if not all([name, email, password, role]):
         return jsonify({'message': 'All fields are required'}), 400
 
+    # Check if user already exists
     if volunteers_collection.find_one({'email': email}):
         return jsonify({'message': 'User already exists'}), 400
 
+    # Hash the password
     hashed_password = generate_password_hash(password)
 
+    # Prepare the user data for insertion
+    user_data = {
+        'name': name,
+        'email': email,
+        'password': hashed_password,
+        'role': role,
+        'interest': interest if role == 'Volunteer' else None,  # Include Interest only for Volunteers
+        'strength': strength if role == 'Volunteer' else None,  # Include Strength only for Volunteers
+        'previous_experiences': previous_experiences if role == 'Volunteer' else None  # Include Previous Experiences only for Volunteers
+    }
+
+    # Log the user data being inserted
+    print(f"User data to be inserted: {user_data}")
+
+    # Insert user data into the database
     try:
-        volunteers_collection.insert_one({
-            'name': name,
-            'email': email,
-            'password': hashed_password,
-            'role': role,
-            'strength': strength,
-            'previous_experiences': previous_experiences
-        })
+        volunteers_collection.insert_one(user_data)
         print("User registered successfully")  # Log successful registration
         return jsonify({'message': 'User registered successfully'}), 201
     except Exception as e:
@@ -112,19 +126,30 @@ def signin():
         if user.get('role') != role:
             return jsonify({'message': 'Role mismatch'}), 403
 
-        # Include additional fields in the response
-        strength = user.get('strength', '')
-        previous_experiences = user.get('previous_experiences', '')
+        # Include additional fields in the response based on role
+        if role == 'organization admin':
+            response_data = {
+                'message': 'Sign-in successful',
+                'userId': str(user['_id']),
+                'username': user.get('name', 'N/A'),
+                'role': user['role']
+            }
+        else:
+            strength = user.get('strength', [])
+            interest = user.get('interest', [])
+            previous_experiences = user.get('previous_experiences', '')
 
-        # Return user details if sign-in is successful
-        return jsonify({
-            'message': 'Sign-in successful',
-            'userId': str(user['_id']),
-            'username': user.get('name', 'N/A'),
-            'role': user['role'],
-            'strength': strength,
-            'previous_experiences': previous_experiences
-        }), 200
+            response_data = {
+                'message': 'Sign-in successful',
+                'userId': str(user['_id']),
+                'username': user.get('name', 'N/A'),
+                'role': user['role'],
+                'strength': strength,
+                'interest': interest,
+                'previous_experiences': previous_experiences
+            }
+
+        return jsonify(response_data), 200
 
     except PyMongoError as e:
         # Handle any database-related errors
@@ -194,8 +219,12 @@ def get_activity(activity_id):
 def join_activity():
     data = request.get_json()
 
-    # Extract and validate input data, including activity_user_id
-    required_fields = ['user_id', 'username', 'email', 'activity_id', 'activity_name', 'location', 'date', 'image', 'activity_user_id', 'strength', 'previous_experiences']
+    # Extract and validate input data, including activity_user_id and interest
+    required_fields = [
+        'user_id', 'username', 'email', 'activity_id', 'activity_name', 
+        'location', 'date', 'image', 'activity_user_id', 
+        'strength', 'previous_experiences', 'interest','genre'
+    ]
     if not all(field in data for field in required_fields):
         return jsonify({'message': 'All fields are required'}), 400
 
@@ -210,6 +239,8 @@ def join_activity():
     activity_user_id = data['activity_user_id']  # Extract organization admin ID as activity_user_id
     strength = data['strength']
     previous_experiences = data['previous_experiences']
+    interest = data['interest']  # New field for interest
+    genre = data['genre']  # New field for genre
 
     try:
         # Get the activity to retrieve its organization_admin_id
@@ -233,7 +264,9 @@ def join_activity():
             'image': image,
             'activity_user_id': activity_user_id,  # Store the provided activity_user_id
             'strength': strength,                  # Include strength
-            'previous_experiences': previous_experiences  # Include previous_experiences
+            'previous_experiences': previous_experiences,  # Include previous_experiences
+            'interest': interest,                   # Include interest
+            'genre': genre                           # Include genre
         })
 
         # Create a notification for the user
@@ -242,6 +275,7 @@ def join_activity():
             'message': f'You have joined the activity "{activity_name}".',
             'activity_id': activity_id,
             'activity_name': activity_name,
+            'genre': genre,  # Include genre
             'activity_user_id': activity_user_id,  # Include activity_user_id here
             'timestamp': datetime.now(timezone.utc)  # Use timezone-aware timestamp
         })
@@ -252,6 +286,8 @@ def join_activity():
             'message': f'User "{username}" has applied to join your activity "{activity_name}".',
             'activity_id': activity_id,
             'activity_name': activity_name,
+            'genre': genre,               # Include genre in organization admin notification
+            'interest': interest,         # Include interest for organization admin notification
             'timestamp': datetime.now(timezone.utc)  # Use timezone-aware timestamp
         })
 
@@ -260,7 +296,7 @@ def join_activity():
     except Exception as e:
         print(f"Error occurred: {str(e)}")  # Log the error for debugging
         return jsonify({'message': 'Error joining activity', 'error': str(e)}), 500
-    
+
 @app.route('/api/check_join_status', methods=['POST'])
 def check_join_status():
     data = request.get_json()
@@ -397,7 +433,8 @@ def get_joined_activities(user_id):
                 'date': activity.get('date', ''),
                 'image': activity.get('image', ''),
                 'username': activity.get('username', ''),  # Add username
-                'email': activity.get('email', '')         # Add email
+                'email': activity.get('email', ''),        # Add email
+                'genre': activity.get('genre', '')         # Add genre
             })
 
         return jsonify(response_data), 200
@@ -990,15 +1027,17 @@ def get_joined_activity_details():
         app.logger.error(f"User not found: name={name}, email={email}")
         return jsonify({'message': 'User not found'}), 404
 
-    # Get previous_experiences and strength
+    # Get previous_experiences, strength, and interest
     previous_experiences = volunteer.get('previous_experiences', None)
     strength = volunteer.get('strength', None)
+    interest = volunteer.get('interest', None)
 
-    app.logger.info(f"Fetched volunteer details: previous_experiences={previous_experiences}, strength={strength}")
+    app.logger.info(f"Fetched volunteer details: previous_experiences={previous_experiences}, strength={strength}, interest={interest}")
 
     return jsonify({
         'previous_experiences': previous_experiences,
-        'strength': strength
+        'strength': strength,
+        'interest': interest
     })
     
 if __name__ == '__main__':

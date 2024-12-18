@@ -238,7 +238,15 @@ const CompletedActivities = ({ userId }) => {
   );
 };
 
-const DiscoverScreen = ({ username, userId, email, role, strength, previous_experiences }) => {
+const DiscoverScreen = ({ username, userId, email, role, strength, previous_experiences, interest}) => {
+  console.log('DiscoverScreen Props:');
+  console.log('Username:', username);
+  console.log('User ID:', userId);
+  console.log('Email:', email);
+  console.log('Role:', role);
+  console.log('Strength:', strength);
+  console.log('Previous Experiences:', previous_experiences);
+  console.log('Interest:', interest);
   const [activities, setActivities] = useState([]);
   const [filteredActivities, setFilteredActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -399,7 +407,7 @@ const DiscoverScreen = ({ username, userId, email, role, strength, previous_expe
                         image: item.imageUri,
                         role: role,
                         strength: strength,
-                        previous_experiences: previous_experiences
+                        previous_experiences: previous_experiences,
                       });
                       navigation.navigate('ActivityDetailsVolunteer', {
                         activity: item,
@@ -409,7 +417,8 @@ const DiscoverScreen = ({ username, userId, email, role, strength, previous_expe
                         image: item.imageUri,
                         role: role,
                         strength: strength,
-                        previous_experiences: previous_experiences
+                        previous_experiences: previous_experiences,
+                        interest: interest // Include interest here
                       });
                     }}
                   >
@@ -500,7 +509,7 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
 const Tab = createBottomTabNavigator();
 
 const DashboardScreenVolunteer = ({ route }) => {
-  const { userId, username, password, email, role, strength, previous_experiences } = route.params;
+  const { userId, username, password, email, role, strength, interest, previous_experiences } = route.params;
 
   // Log details for verification
   console.log("DashboardScreenVolunteer - userId:", userId);
@@ -509,6 +518,7 @@ const DashboardScreenVolunteer = ({ route }) => {
   console.log('Email:', email);
   console.log('Role:', role); // Log the role
   console.log('Strength:', strength); // Log strength
+  console.log('Interest:', interest); // Log strength
   console.log('Previous Experiences:', previous_experiences); // Log previous experiences
 
   return (
@@ -535,7 +545,7 @@ const DashboardScreenVolunteer = ({ route }) => {
       />
       <Tab.Screen 
         name="Discover" 
-        children={() => <DiscoverScreen username={username} userId={userId} email={email} strength={strength} previous_experiences={previous_experiences} />} 
+        children={() => <DiscoverScreen username={username} userId={userId} email={email} strength={strength} previous_experiences={previous_experiences} interest={interest}  role={role}/>} 
         options={{
           headerShown: false,
           tabBarIcon: ({ color }) => <Icon name="search" size={20} color={color} />

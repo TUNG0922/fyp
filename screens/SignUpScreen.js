@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker'; // Import Picker component
+import MultiSelect from 'react-native-multiple-select';
 
 const SignUpScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Volunteer'); // Default role
+  const [interest, setInterest] = useState(''); // New field
   const [strength, setStrength] = useState(''); // New field
   const [previousExperiences, setPreviousExperiences] = useState(''); // New field
-
+  const strengthOptions = [
+    { id: 'Empathy', name: 'Empathy' },
+    { id: 'Adaptability', name: 'Adaptability' },
+    { id: 'Patience', name: 'Patience' },
+    { id: 'Resilience', name: 'Resilience' },
+    { id: 'Teamwork', name: 'Teamwork' },
+    { id: 'Leadership', name: 'Leadership' },
+    { id: 'Communication', name: 'Communication' },
+    { id: 'Creativity', name: 'Creativity' },
+    { id: 'Problem-Solving', name: 'Problem-Solving' },
+    { id: 'Teaching', name: 'Teaching' },
+    { id: 'First Aid', name: 'First Aid' },
+    { id: 'Technology Skills', name: 'Technology Skills' },
+    { id: 'Event Management', name: 'Event Management' },
+    { id: 'Cultural Sensitivity', name: 'Cultural Sensitivity' },
+    { id: 'Advocacy', name: 'Advocacy' },
+    { id: 'Community Outreach', name: 'Community Outreach' },
+  ];
   const handleSignUp = async () => {
     console.log('Sign Up button pressed');
     console.log('Sending sign-up request to backend');
@@ -25,7 +44,8 @@ const SignUpScreen = ({ navigation }) => {
                 email, 
                 password, 
                 role, 
-                strength: strength || '',  // Handle empty strings
+                interest: role === 'Volunteer' ? interest : undefined,
+                strength: Array.isArray(strength) ? strength : [strength],  // Handle multi-selection as an array
                 previous_experiences: previousExperiences || ''  // Handle empty strings
             }),
         });
@@ -97,12 +117,57 @@ const SignUpScreen = ({ navigation }) => {
 
       {role === 'Volunteer' && (
         <>
+        <Text style={styles.label}>Interest</Text>
+        <MultiSelect
+          items={[
+            { id: 'Community Service', name: 'Community Service' },
+            { id: 'Education', name: 'Education' },
+            { id: 'Health Support', name: 'Health Support' },
+            { id: 'Environmental Conservation', name: 'Environmental Conservation' },
+            { id: 'Social Justice', name: 'Social Justice' },
+            { id: 'Youth Empowerment', name: 'Youth Empowerment' },
+            { id: 'Elder Care', name: 'Elder Care' },
+            { id: 'Animal Welfare', name: 'Animal Welfare' },
+            { id: 'Technology for Good', name: 'Technology for Good' },
+            { id: 'Arts & Culture', name: 'Arts & Culture' },
+            { id: 'Disaster Relief', name: 'Disaster Relief' },
+            { id: 'Food Security', name: 'Food Security' },
+            { id: 'Mental Health Support', name: 'Mental Health Support' },
+            { id: 'Event Organization', name: 'Event Organization' },
+            { id: 'Climate Action', name: 'Climate Action' },
+          ]}
+          uniqueKey="id"
+          onSelectedItemsChange={(selectedItems) => setInterest(selectedItems)}
+          selectedItems={interest}
+          selectText="Pick your interests"
+          searchInputPlaceholderText="Search interests..."
+          tagRemoveIconColor="#CCC"
+          tagBorderColor="#CCC"
+          tagTextColor="#333"
+          selectedItemTextColor="#547DBE"
+          selectedItemIconColor="#547DBE"
+          itemTextColor="#000"
+          displayKey="name"
+          searchInputStyle={{ color: '#CCC' }}
+          hideSubmitButton={true} // Hides the Submit and Done buttons
+        />
           <Text style={styles.label}>Strength</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your strength"
-            value={strength}
-            onChangeText={setStrength}
+          <MultiSelect
+            items={strengthOptions}
+            uniqueKey="id"
+            onSelectedItemsChange={(selectedItems) => setStrength(selectedItems)}
+            selectedItems={strength}
+            selectText="Pick your strengths"
+            searchInputPlaceholderText="Search strengths..."
+            tagRemoveIconColor="#CCC"
+            tagBorderColor="#CCC"
+            tagTextColor="#333"
+            selectedItemTextColor="#547DBE"
+            selectedItemIconColor="#547DBE"
+            itemTextColor="#000"
+            displayKey="name"
+            searchInputStyle={{ color: '#CCC' }}
+            hideSubmitButton={true} // Hides the Submit and Done buttons
           />
 
           <Text style={styles.label}>Previous Experiences</Text>
@@ -142,7 +207,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   label: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
     marginBottom: 4,
     color: '#333',

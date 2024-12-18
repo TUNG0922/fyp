@@ -15,6 +15,12 @@ const HomeScreen = ({ route }) => {
   const [joinedActivities, setJoinedActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const handleAnalyze = (activityId) => {
+    // Logic for analyzing the activity
+    console.log('Analyzing activity with ID:', activityId);
+    // Add your logic here
+  };
+  
   const fetchJoinedActivities = async () => {
     try {
       const response = await axios.get(`http://10.0.2.2:5000/api/joined_activities/${userId}`);
@@ -118,16 +124,17 @@ const HomeScreen = ({ route }) => {
         console.log('API Response:', response.data);
 
         // Check if the response contains valid data
-        if (response.data && 
-            response.data.strength !== undefined && 
-            response.data.previous_experiences !== undefined) {
+        const { strength, previous_experiences, interest } = response.data;
+        console.log("Fetched activities:", response.data);
 
-            const { strength, previous_experiences } = response.data;
+        // Ensure interest is an array before joining it into a string
+        const interestString = Array.isArray(interest) ? interest.join(', ') : 'No interest data';
 
+        if (strength !== undefined && previous_experiences !== undefined && interestString !== undefined) {
             // Display activity details in an alert
             Alert.alert(
                 'Volunteer Details',
-                `Strength: ${strength}\nPrevious Experiences: ${previous_experiences}`,
+                `Strength: ${strength}\nPrevious Experiences: ${previous_experiences}\nInterest: ${interestString}`,
                 [{ text: 'OK' }]
             );
         } else {
@@ -166,10 +173,11 @@ const HomeScreen = ({ route }) => {
         keyExtractor={(item) => item.activity_id?.toString() || Math.random().toString()}
         renderItem={({ item }) => {
           console.log("Item data:", item); // Log the full item object for debugging
+          console.log('Activity Genre:', item.genre); // Log the genre of the activity
           console.log("Rendering activity with ID:", item.activity_id);  // Log to confirm field name
           return (
-              <TouchableOpacity onPress={() => handleCardPress(item.username, item.email)}>
-                <View style={styles.activityItem}>
+            <TouchableOpacity onPress={() => handleCardPress(item.username, item.email)}>
+              <View style={styles.activityItem}>
                 <Image 
                   source={{ uri: item.image || 'default_image_url' }}  // Fallback image if undefined
                   style={styles.activityImage} 
@@ -178,34 +186,42 @@ const HomeScreen = ({ route }) => {
                   <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
                   <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
                   <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
-
+        
                   {/* Name Label and Value */}
                   <Text style={styles.labelText}>Name</Text>
                   <Text style={styles.userNameText}>{item.username || 'Unknown User'}</Text>
-
+        
                   {/* Email Label and Value */}
                   <Text style={styles.labelText}>Email</Text>
                   <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
                 </View>
-                <View style={{ flexDirection: 'row' }}>
-                <TouchableOpacity
-                  style={styles.acceptButton}
-                  onPress={() => handleAccept(item.activity_id)}
-                >
-                  <Text style={styles.buttonText}>Accept</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.rejectButton} 
-                  onPress={() => handleReject(item.activity_id)} 
-                >
-                  <Text style={styles.buttonText}>Reject</Text>
-                </TouchableOpacity>
+                
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.acceptButton}
+                    onPress={() => handleAccept(item.activity_id)}
+                  >
+                    <Text style={styles.buttonText}>Accept</Text>
+                  </TouchableOpacity>
+        
+                  <TouchableOpacity 
+                    style={styles.rejectButton} 
+                    onPress={() => handleReject(item.activity_id)} 
+                  >
+                    <Text style={styles.buttonText}>Reject</Text>
+                  </TouchableOpacity>
+        
+                  <TouchableOpacity 
+                    style={styles.analyzeButton} 
+                    onPress={() => handleAnalyze(item.activity_id)} 
+                  >
+                    <Text style={styles.buttonText}>Analyze</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </TouchableOpacity>
           );
-        }}
+        }}           
         ListEmptyComponent={<Text>No activities available for response.</Text>}
       />
     </View>
@@ -515,7 +531,7 @@ const DiscoverScreen = ({ route, navigation }) => {
         <Text style={styles.formLabel}>Date</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter date"
+          placeholder="Enter date (ex: 22 Sep 2024)"
           placeholderTextColor="#000"
           value={date}
           onChangeText={setDate}
@@ -758,38 +774,31 @@ const styles = StyleSheet.create({
   
   // Activity Details Container
   activityDetails: {
-    flex: 1,
+    marginTop: 10,
   },
-  
-  // Activity Text Styles
+
   activityName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333', // Dark text color for better readability
   },
-  
+
   activityLocation: {
-    fontSize: 15,
-    color: '#777', // Light gray for less important text
+    fontSize: 16,
   },
 
   activityDate: {
-    fontSize: 13,
-    color: '#999', // Lighter color for date
+    fontSize: 16,
   },
   
   // User Info Text
   userNameText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 16,
+    color: '#555',
   },
 
   userEmailText: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: 'bold',
-
+    fontSize: 16,
+    color: '#555',
   },
   
   // Delete Button Styles
@@ -891,9 +900,8 @@ const styles = StyleSheet.create({
 
   // Cancel Button
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingBottom: 50,           // Added padding below buttons
+    flexDirection: 'column',
+    marginTop: 10,
   },
   
   // Selected Image
@@ -1038,8 +1046,8 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    textAlign: 'center',
   },
 
   container: {
@@ -1063,26 +1071,28 @@ const styles = StyleSheet.create({
   },
 
   acceptButton: {
-    backgroundColor: '#00BFAE',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    elevation: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#28A745',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 5, // Adding vertical spacing between buttons
   },
+
   rejectButton: {
-    backgroundColor: '#FF4B4B',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    elevation: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#DC3545',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 5, // Adding vertical spacing between buttons
   },
+
   spacing: {
     width: 10,  // Adjust as needed
-  }
+  },
+  analyzeButton: {
+    backgroundColor: '#FFA500',
+    padding: 8,
+    borderRadius: 5,
+  },
+
 });
 
 export default DashboardScreenOrganizationAdmin;

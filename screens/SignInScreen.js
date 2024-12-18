@@ -20,6 +20,7 @@ const SignInScreen = ({ navigation }) => {
         const userId = data.userId; // This should now contain the userId
         const username = data.username || 'LOG'; // Use the username or default to 'LOG'
         const strength = data.strength; // Retrieve strength
+        const interest = data.interest; // Retrieve interest
         const previous_experiences = data.previous_experiences; // Retrieve previous experiences
 
         if (userId) {
@@ -27,12 +28,13 @@ const SignInScreen = ({ navigation }) => {
           await AsyncStorage.setItem('username', username); // Store username
           await AsyncStorage.setItem('password', password); // Store password
           await AsyncStorage.setItem('email', email); // Store email
-          await AsyncStorage.setItem('strength', strength); // Store strength
+          await AsyncStorage.setItem('strength', JSON.stringify(strength)); // Store strength as JSON
+          await AsyncStorage.setItem('interest', JSON.stringify(interest)); // Store interest as JSON
           await AsyncStorage.setItem('previous_experiences', previous_experiences); // Store previous experiences
 
           // Pass the role along with strength and previous experiences to DashboardVolunteer
           if (role === 'Volunteer') {
-            navigation.navigate('DashboardVolunteer', { userId, username, password, email, role, strength, previous_experiences });
+            navigation.navigate('DashboardVolunteer', { userId, username, password, email, role, strength, interest, previous_experiences });
           } else if (role === 'Organization Admin') {
             navigation.navigate('DashboardOrganizationAdmin', { userId, username, password, email, role });
           } else if (role === 'Platform Admin') {
