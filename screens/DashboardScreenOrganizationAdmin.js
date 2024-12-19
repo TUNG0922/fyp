@@ -15,12 +15,56 @@ const HomeScreen = ({ route }) => {
   const [joinedActivities, setJoinedActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const handleAnalyze = (activityId) => {
-    // Logic for analyzing the activity
-    console.log('Analyzing activity with ID:', activityId);
-    // Add your logic here
-  };
-  
+  const handleAnalyze = async (activityId, username, email) => {
+    try {
+        console.log('Starting to fetch interest and strength for:', {
+            activityId,
+            username,
+            email
+        });
+
+        // Fetch interest and strength from the backend
+        const response = await fetch('http://10.0.2.2:5000/get_interest_strength', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ activity_id: activityId, username, email }),
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            console.log('Interest:', data.interest, 'Strength:', data.strength);
+            // Additional debug log to ensure values are correct
+            console.log('Debug - Retrieved Interest and Strength:', { interest: data.interest, strength: data.strength });
+
+            // Pass these values to the /predict endpoint
+            const predictResponse = await fetch('http://10.0.2.2:5000/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ interest: data.interest, strength: data.strength }),
+            });
+
+            const predictData = await predictResponse.json();
+
+            if (predictResponse.ok) {
+                console.log('Predicted Genre:', predictData.genre);
+                // Display a popup with the recommended genre
+                alert(`The recommended genre for the user based on their interests and strengths is: ${predictData.genre}`);
+            } else {
+                console.error(predictData.error);
+            }
+        } else {
+            console.error(data.error);
+        }
+    } catch (error) {
+        console.error('Error fetching interest and strength:', error);
+    }
+};
+
   const fetchJoinedActivities = async () => {
     try {
       const response = await axios.get(`http://10.0.2.2:5000/api/joined_activities/${userId}`);
@@ -213,7 +257,7 @@ const HomeScreen = ({ route }) => {
         
                   <TouchableOpacity 
                     style={styles.analyzeButton} 
-                    onPress={() => handleAnalyze(item.activity_id)} 
+                    onPress={() => handleAnalyze(item.activity_id, item.username, item.email)} 
                   >
                     <Text style={styles.buttonText}>Analyze</Text>
                   </TouchableOpacity>

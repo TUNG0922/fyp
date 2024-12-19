@@ -14,21 +14,39 @@ const SignUpScreen = ({ navigation }) => {
   const strengthOptions = [
     { id: 'Empathy', name: 'Empathy' },
     { id: 'Adaptability', name: 'Adaptability' },
-    { id: 'Patience', name: 'Patience' },
+    { id: 'Data Analysis', name: 'Data Analysis' },
     { id: 'Resilience', name: 'Resilience' },
     { id: 'Teamwork', name: 'Teamwork' },
     { id: 'Leadership', name: 'Leadership' },
     { id: 'Communication', name: 'Communication' },
     { id: 'Creativity', name: 'Creativity' },
+    { id: 'Conflict Resolution', name: 'Conflict Resolution' },
     { id: 'Problem-Solving', name: 'Problem-Solving' },
-    { id: 'Teaching', name: 'Teaching' },
-    { id: 'First Aid', name: 'First Aid' },
+    { id: 'Public Speaking', name: 'Public Speaking' },
+    { id: 'Time Management', name: 'Time Management' },
     { id: 'Technology Skills', name: 'Technology Skills' },
-    { id: 'Event Management', name: 'Event Management' },
-    { id: 'Cultural Sensitivity', name: 'Cultural Sensitivity' },
-    { id: 'Advocacy', name: 'Advocacy' },
+    { id: 'Organizational Skills', name: 'Organizational Skills' },
+    { id: 'Mentoring', name: 'Mentoring' },
+    { id: 'Research Skills', name: 'Research Skills' },
     { id: 'Community Outreach', name: 'Community Outreach' },
   ];
+  
+  const handleStrengthChange = (selectedItems) => {
+    if (selectedItems.length > 3) {
+      Alert.alert('Limit Exceeded', 'You can only select up to 3 strengths.');
+      return;
+    }
+    setStrength(selectedItems);
+  };
+  
+  const handleInterestChange = (selectedItems) => {
+    if (selectedItems.length > 3) {
+      Alert.alert('Limit Exceeded', 'You can only select up to 3 interests.');
+      return;
+    }
+    setInterest(selectedItems);
+  };
+
   const handleSignUp = async () => {
     console.log('Sign Up button pressed');
     console.log('Sending sign-up request to backend');
@@ -126,18 +144,12 @@ const SignUpScreen = ({ navigation }) => {
             { id: 'Environmental Conservation', name: 'Environmental Conservation' },
             { id: 'Social Justice', name: 'Social Justice' },
             { id: 'Youth Empowerment', name: 'Youth Empowerment' },
-            { id: 'Elder Care', name: 'Elder Care' },
             { id: 'Animal Welfare', name: 'Animal Welfare' },
-            { id: 'Technology for Good', name: 'Technology for Good' },
-            { id: 'Arts & Culture', name: 'Arts & Culture' },
             { id: 'Disaster Relief', name: 'Disaster Relief' },
-            { id: 'Food Security', name: 'Food Security' },
-            { id: 'Mental Health Support', name: 'Mental Health Support' },
-            { id: 'Event Organization', name: 'Event Organization' },
             { id: 'Climate Action', name: 'Climate Action' },
           ]}
           uniqueKey="id"
-          onSelectedItemsChange={(selectedItems) => setInterest(selectedItems)}
+          onSelectedItemsChange={handleInterestChange}
           selectedItems={interest}
           selectText="Pick your interests"
           searchInputPlaceholderText="Search interests..."
@@ -155,7 +167,7 @@ const SignUpScreen = ({ navigation }) => {
           <MultiSelect
             items={strengthOptions}
             uniqueKey="id"
-            onSelectedItemsChange={(selectedItems) => setStrength(selectedItems)}
+            onSelectedItemsChange={handleStrengthChange}
             selectedItems={strength}
             selectText="Pick your strengths"
             searchInputPlaceholderText="Search strengths..."

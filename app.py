@@ -7,6 +7,8 @@ from datetime import datetime, timezone  # Ensure timezone is imported
 from pymongo.errors import PyMongoError
 import logging
 from bson.json_util import dumps
+import joblib
+import numpy as np
 
 app = Flask(__name__)
 
@@ -48,6 +50,41 @@ print(list(join_activity_collection.find()))
 print("Documents in past_activity_collection:")
 print(list(past_activity_collection.find()))
 
+# Load the logistic regression model and encoders
+MODEL_PATH = 'train_model/logistic_model.pkl'
+INTERESTS_ENCODER_PATH = 'train_model/label_encoder_interests.pkl'
+STRENGTHS_ENCODER_PATH = 'train_model/label_encoder_strengths.pkl'
+GENRE_ENCODER_PATH = 'train_model/label_encoder_genre.pkl'
+
+logistic_model = joblib.load(MODEL_PATH)
+label_encoder_interests = joblib.load(INTERESTS_ENCODER_PATH)
+label_encoder_strengths = joblib.load(STRENGTHS_ENCODER_PATH)
+label_encoder_genre = joblib.load(GENRE_ENCODER_PATH)
+
+@app.route('/predict', methods=['POST'])
+def predict_genre():
+    data = request.json
+    interest = data.get('interest')
+    strength = data.get('strength')
+
+    # Validate that both interest and strength are provided
+    if not interest or not strength:
+        return jsonify({'error': 'Both "interests" and "strengths" are required.'}), 400
+
+    # Encode interest and strength
+    encoded_interest = label_encoder_interests.transform([interest])[0]
+    encoded_strength = label_encoder_strengths.transform([strength])[0]
+
+    # Predict using the logistic model
+    genre_encoded = logistic_model.predict([[encoded_interest, encoded_strength]])[0]
+
+    # Decode the genre
+    genre = label_encoder_genre.inverse_transform([genre_encoded])[0]
+
+    return jsonify({
+        'genre': genre
+    })
+    
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -1039,6 +1076,37 @@ def get_joined_activity_details():
         'strength': strength,
         'interest': interest
     })
+
+@app.route('/get_interest_strength', methods=['POST'])
+def get_interest_strength():
+    data = request.json
+    activity_id = data.get('activity_id')
+    username = data.get('username')
+    email = data.get('email')
+
+    activity_id = ObjectId(activity_id)  # Ensure activity_id is an ObjectId
+
+    # Query the join_activity collection
+    result = join_activity_collection.find_one({
+        '_id': activity_id,
+        'username': username,
+        'email': email
+    })
+
+    print(f"Querying join_activity collection with: activity_id={activity_id}, username={username}, email={email}")
+    print(f"Query result: {result}")
+
+    if result:
+        # Retrieve the first item from the arrays
+        interest = result.get('interest', [None])[0]  # Safeguard with default empty list
+        strength = result.get('strength', [None])[0]  # Safeguard with default empty list
+
+        return jsonify({
+            'interest': interest,
+            'strength': strength
+        })
+    else:
+         return jsonify({'error': 'Record not found'}), 404
     
 if __name__ == '__main__':
     app.run(debug=True)
