@@ -11,9 +11,13 @@ import Ionicons from 'react-native-vector-icons/Ionicons'; // Import the filter 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HomeScreen = ({ route }) => {
-  const { userId, userName, userEmail } = route.params; // Destructure userName and userEmail
+  const { userId, username, email } = route.params; // Destructure userName and userEmail
   const [joinedActivities, setJoinedActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Add a console.log here
+  console.log('Params:', { userId, username, email });
+  console.log('Initial state:', { joinedActivities, loading });
 
   const handleAnalyze = async (activityId, username, email) => {
     try {
@@ -24,7 +28,7 @@ const HomeScreen = ({ route }) => {
         });
 
         // Fetch interest and strength from the backend
-        const response = await fetch('http://10.0.2.2:5000/get_interest_strength', {
+        const response = await fetch('http://10.0.2.2:5000/api/get_interest_strength', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -40,7 +44,7 @@ const HomeScreen = ({ route }) => {
             console.log('Debug - Retrieved Interest and Strength:', { interest: data.interest, strength: data.strength });
 
             // Pass these values to the /predict endpoint
-            const predictResponse = await fetch('http://10.0.2.2:5000/predict', {
+            const predictResponse = await fetch('http://10.0.2.2:5000/api/predict_genre', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -202,74 +206,77 @@ const HomeScreen = ({ route }) => {
     }
 };
 
-  if (loading) {
-    return (
-      <View style={styles.screenContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
-
+if (loading) {
   return (
-    <View style={styles.screenContainer}>
-      <FlatList
-        data={joinedActivities}
-        keyExtractor={(item) => item.activity_id?.toString() || Math.random().toString()}
-        renderItem={({ item }) => {
-          console.log("Item data:", item); // Log the full item object for debugging
-          console.log('Activity Genre:', item.genre); // Log the genre of the activity
-          console.log("Rendering activity with ID:", item.activity_id);  // Log to confirm field name
-          return (
-            <TouchableOpacity onPress={() => handleCardPress(item.username, item.email)}>
-              <View style={styles.activityItem}>
-                <Image 
-                  source={{ uri: item.image || 'default_image_url' }}  // Fallback image if undefined
-                  style={styles.activityImage} 
-                />
-                <View style={styles.activityDetails}>
-                  <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
-                  <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
-                  <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
-        
-                  {/* Name Label and Value */}
-                  <Text style={styles.labelText}>Name</Text>
-                  <Text style={styles.userNameText}>{item.username || 'Unknown User'}</Text>
-        
-                  {/* Email Label and Value */}
-                  <Text style={styles.labelText}>Email</Text>
-                  <Text style={styles.userEmailText}>{item.email || 'Unknown Email'}</Text>
-                </View>
-                
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={styles.acceptButton}
-                    onPress={() => handleAccept(item.activity_id)}
-                  >
-                    <Text style={styles.buttonText}>Accept</Text>
-                  </TouchableOpacity>
-        
-                  <TouchableOpacity 
-                    style={styles.rejectButton} 
-                    onPress={() => handleReject(item.activity_id)} 
-                  >
-                    <Text style={styles.buttonText}>Reject</Text>
-                  </TouchableOpacity>
-        
-                  <TouchableOpacity 
-                    style={styles.analyzeButton} 
-                    onPress={() => handleAnalyze(item.activity_id, item.username, item.email)} 
-                  >
-                    <Text style={styles.buttonText}>Analyze</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        }}           
-        ListEmptyComponent={<Text>No activities available for response.</Text>}
-      />
+    <View style={styles.mainContainer}>
+      <ActivityIndicator size="large" color="#0000ff" />
     </View>
   );
+}
+
+return (
+  <View style={styles.mainContainer}>
+    <FlatList
+      data={joinedActivities}
+      keyExtractor={(item) => item.activity_id?.toString() || Math.random().toString()}
+      renderItem={({ item }) => {
+        console.log("Item data:", item); // Log the full item object for debugging
+        console.log('Activity Genre:', item.genre); // Log the genre of the activity
+        console.log("Rendering activity with ID:", item.activity_id);  // Log to confirm field name
+        return (
+          <TouchableOpacity onPress={() => handleCardPress(item.username, item.email)}>
+            <View style={styles.cardContainer}>
+              <Image 
+                source={{ uri: item.image || 'default_image_url' }}  // Fallback image if undefined
+                style={styles.cardImage} 
+              />
+              <View style={styles.cardDetails}>
+                <Text style={styles.cardLabel}>Activity Name</Text>
+                <Text style={styles.cardName}>{item.activity_name || 'Unknown Activity'}</Text>
+                <Text style={styles.cardLabel}>Location</Text>
+                <Text style={styles.cardLocation}>{item.location || 'Unknown Location'}</Text>
+                <Text style={styles.cardLabel}>Date</Text>
+                <Text style={styles.cardDate}>{item.date || 'Unknown Date'}</Text>
+      
+                {/* Name Label and Value */}
+                <Text style={styles.cardLabel}>Name</Text>
+                <Text style={styles.cardUsername}>{item.username || 'Unknown User'}</Text>
+      
+                {/* Email Label and Value */}
+                <Text style={styles.cardLabel}>Email</Text>
+                <Text style={styles.cardEmail}>{item.email || 'Unknown Email'}</Text>
+              </View>
+              
+              <View style={styles.cardButtonGroup}>
+                <TouchableOpacity
+                  style={styles.acceptButton}
+                  onPress={() => handleAccept(item.activity_id)}
+                >
+                  <Text style={styles.cardButtonText}>Accept</Text>
+                </TouchableOpacity>
+      
+                <TouchableOpacity 
+                  style={styles.rejectButton} 
+                  onPress={() => handleReject(item.activity_id)} 
+                >
+                  <Text style={styles.cardButtonText}>Reject</Text>
+                </TouchableOpacity>
+      
+                <TouchableOpacity 
+                  style={styles.analyzeButton} 
+                  onPress={() => handleAnalyze(item.activity_id, item.username, item.email)} 
+                >
+                  <Text style={styles.cardButtonText}>Analyze</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        );
+      }}           
+      ListEmptyComponent={<Text>No activities available for response.</Text>}
+    />
+  </View>
+);
 };
 
 const DiscoverScreen = ({ route, navigation }) => {
@@ -456,19 +463,39 @@ const DiscoverScreen = ({ route, navigation }) => {
   // Render each activity item
   const renderActivityItem = ({ item }) => (
     <TouchableOpacity onPress={() => handleActivityPress(item)}>
-      <View style={styles.activityItem}>
-        {item.imageUri && <Image source={{ uri: item.imageUri }} style={styles.activityImage} />}
-        <View style={styles.activityDetails}>
-          <Text style={styles.activityName}>{item.name}</Text>
-          <Text style={styles.activityLocation}>{item.location}</Text>
-          <Text style={styles.activityDate}>{item.date}</Text>
-        </View>
-
-        {item.userId === userId && (
-          <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item._id)}>
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
+      <View style={styles.activityCard}>
+        {/* Image Section */}
+        {item.imageUri && (
+          <Image source={{ uri: item.imageUri }} style={styles.activityImage} />
         )}
+        <View style={styles.activityContent}>
+          {/* Activity Name */}
+          <Text style={styles.activityTitle}>{item.name}</Text>
+          {/* Activity Details */}
+          <View style={styles.activityInfo}>
+            <Ionicons name="location" size={16} color="#555" />
+            <Text style={styles.activityText}>{item.location}</Text>
+          </View>
+          <View style={styles.activityInfo}>
+            <Ionicons name="calendar" size={16} color="#555" />
+            <Text style={styles.activityText}>{item.date}</Text>
+          </View>
+          {item.genre && (
+            <View style={styles.activityInfo}>
+              <Ionicons name="pricetag-outline" size={16} color="#555" />
+              <Text style={styles.activityGenre}>{item.genre}</Text>
+            </View>
+          )}
+          {/* Delete Button (Visible only to the creator) */}
+          {item.userId === userId && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDelete(item._id)}
+            >
+              <Text style={styles.deleteButtonText}>Delete</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -729,7 +756,7 @@ const DashboardScreenOrganizationAdmin = ({ route }) => {
       name="Home"
       component={HomeScreen}
       options={{ headerShown: false }}
-      initialParams={{ username, userId, role }}
+      initialParams={{ username, userId, role, email }}
     />
     <Tab.Screen
       name="Discover"
@@ -791,29 +818,36 @@ const styles = StyleSheet.create({
   },
   
   // Activity Item Layout (Card style)
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 15,
-    backgroundColor: '#fff', // White card background
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 5, // Adding shadow to make it pop
+  activityCard: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginVertical: 10,
+    marginHorizontal: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 5,
+    shadowRadius: 10,
+    elevation: 3,
+    overflow: 'hidden',
   },
   
   // Activity Image
   activityImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    borderColor: '#e1e1e1',
-    borderWidth: 1,
-    marginRight: 15, // Spacing between image and text
+    width: '100%',
+    height: undefined,  // Height is undefined so it scales based on aspect ratio
+    aspectRatio: 16/9,  // You can set this ratio based on your image's aspect ratio
+    resizeMode: 'contain',  // 'contain' ensures the image fits within the given width/height without distortion
+    borderRadius: 8, // Optional: for rounded corners
+  },
+
+  activityContent: {
+    padding: 15,
+  },
+
+  activityTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 5,
   },
   
   // Activity Details Container
@@ -821,9 +855,22 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 
-  activityName: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  activityInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 3,
+  },
+
+  activityText: {
+    fontSize: 14,
+    color: '#555',
+    marginLeft: 5,
+  },
+  activityGenre: {
+    fontSize: 14,
+    color: '#007BFF',
+    marginLeft: 5,
+    fontStyle: 'italic',
   },
 
   activityLocation: {
@@ -847,16 +894,17 @@ const styles = StyleSheet.create({
   
   // Delete Button Styles
   deleteButton: {
-    backgroundColor: '#FF4B4B',
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: 'center',
+    marginTop: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF6F61',
+    alignSelf: 'flex-start',
   },
-
+  
   deleteButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 14,
   },
   
   // Form Styles
@@ -1115,28 +1163,102 @@ const styles = StyleSheet.create({
   },
 
   acceptButton: {
-    backgroundColor: '#28A745',
-    padding: 8,
+    flex: 1,
+    backgroundColor: '#4CAF50', // Green for accept
+    padding: 10,
     borderRadius: 5,
-    marginBottom: 5, // Adding vertical spacing between buttons
+    alignItems: 'center',
+    marginRight: 5,
   },
-
   rejectButton: {
-    backgroundColor: '#DC3545',
-    padding: 8,
+    flex: 1,
+    backgroundColor: '#f44336', // Red for reject
+    padding: 10,
     borderRadius: 5,
-    marginBottom: 5, // Adding vertical spacing between buttons
-  },
-
-  spacing: {
-    width: 10,  // Adjust as needed
+    alignItems: 'center',
+    marginLeft: 5,
+    marginRight: 5,
   },
   analyzeButton: {
-    backgroundColor: '#FFA500',
-    padding: 8,
+    flex: 1,
+    backgroundColor: '#2196F3', // Blue for analyze
+    padding: 10,
     borderRadius: 5,
+    alignItems: 'center',
+    marginLeft: 5,
   },
-
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#f9f9f9', // Light background for better readability
+    padding: 10,
+  },
+  cardContainer: {
+    backgroundColor: '#ffffff', // White background for the card
+    borderRadius: 8,
+    marginVertical: 10,
+    padding: 15,
+    shadowColor: '#000', // Subtle shadow for a lifted card effect
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3, // Shadow for Android
+  },
+  cardImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  cardDetails: {
+    marginBottom: 15,
+  },
+  cardName: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  cardLocation: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  cardDate: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+  },
+  cardLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#555',
+    marginTop: 5,
+  },
+  cardUsername: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 5,
+  },
+  cardEmail: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+  },
+  cardButtonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  cardButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+  },
 });
 
 export default DashboardScreenOrganizationAdmin;

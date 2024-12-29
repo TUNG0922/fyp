@@ -14,21 +14,12 @@ const SignUpScreen = ({ navigation }) => {
   const strengthOptions = [
     { id: 'Empathy', name: 'Empathy' },
     { id: 'Adaptability', name: 'Adaptability' },
-    { id: 'Data Analysis', name: 'Data Analysis' },
-    { id: 'Resilience', name: 'Resilience' },
-    { id: 'Teamwork', name: 'Teamwork' },
     { id: 'Leadership', name: 'Leadership' },
-    { id: 'Communication', name: 'Communication' },
-    { id: 'Creativity', name: 'Creativity' },
     { id: 'Conflict Resolution', name: 'Conflict Resolution' },
     { id: 'Problem-Solving', name: 'Problem-Solving' },
     { id: 'Public Speaking', name: 'Public Speaking' },
     { id: 'Time Management', name: 'Time Management' },
-    { id: 'Technology Skills', name: 'Technology Skills' },
-    { id: 'Organizational Skills', name: 'Organizational Skills' },
-    { id: 'Mentoring', name: 'Mentoring' },
-    { id: 'Research Skills', name: 'Research Skills' },
-    { id: 'Community Outreach', name: 'Community Outreach' },
+    { id: 'Others', name: 'Others' },
   ];
   
   const handleStrengthChange = (selectedItems) => {
@@ -142,11 +133,10 @@ const SignUpScreen = ({ navigation }) => {
             { id: 'Education', name: 'Education' },
             { id: 'Health Support', name: 'Health Support' },
             { id: 'Environmental Conservation', name: 'Environmental Conservation' },
-            { id: 'Social Justice', name: 'Social Justice' },
-            { id: 'Youth Empowerment', name: 'Youth Empowerment' },
             { id: 'Animal Welfare', name: 'Animal Welfare' },
             { id: 'Disaster Relief', name: 'Disaster Relief' },
             { id: 'Climate Action', name: 'Climate Action' },
+            { id: 'Others', name: 'Others' },
           ]}
           uniqueKey="id"
           onSelectedItemsChange={handleInterestChange}

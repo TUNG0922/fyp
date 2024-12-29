@@ -9,6 +9,7 @@ import logging
 from bson.json_util import dumps
 import joblib
 import numpy as np
+import pandas as pd  # Import Pandas at the beginning
 
 app = Flask(__name__)
 
@@ -50,40 +51,108 @@ print(list(join_activity_collection.find()))
 print("Documents in past_activity_collection:")
 print(list(past_activity_collection.find()))
 
-# Load the logistic regression model and encoders
-MODEL_PATH = 'train_model/logistic_model.pkl'
-INTERESTS_ENCODER_PATH = 'train_model/label_encoder_interests.pkl'
-STRENGTHS_ENCODER_PATH = 'train_model/label_encoder_strengths.pkl'
-GENRE_ENCODER_PATH = 'train_model/label_encoder_genre.pkl'
+# Load the trained model and other necessary files
+model_path = 'train_model/improved_genre_model.pkl'
+interests_path = 'train_model/all_interests.pkl'
+strengths_path = 'train_model/all_strengths.pkl'
 
-logistic_model = joblib.load(MODEL_PATH)
-label_encoder_interests = joblib.load(INTERESTS_ENCODER_PATH)
-label_encoder_strengths = joblib.load(STRENGTHS_ENCODER_PATH)
-label_encoder_genre = joblib.load(GENRE_ENCODER_PATH)
+model = joblib.load(model_path)
+all_interests = joblib.load(interests_path)
+all_strengths = joblib.load(strengths_path)
 
-@app.route('/predict', methods=['POST'])
-def predict_genre():
+@app.route('/api/predict_genre', methods=['POST'])
+def predict_genre_route():
+    try:
+        # Get JSON input
+        data = request.json
+
+        # Log the received data
+        print('Received data:', data)
+
+        # Validate input
+        if not isinstance(data, dict):
+            return jsonify({'error': 'Invalid input format. Must be a JSON object.'}), 400
+
+        # Use correct key names
+        interests = data.get('interest', [])  # Changed 'Interests' to 'interest'
+        strengths = data.get('strength', [])  # Changed 'Strengths' to 'strength'
+
+        # Track the values of interests and strengths
+        print("Debug - Extracted Interests:", interests)
+        print("Debug - Extracted Strengths:", strengths)
+
+        if not isinstance(interests, list) or not isinstance(strengths, list):
+            return jsonify({'error': 'Interests and strengths must be arrays.'}), 400
+        if not interests or not strengths:
+            return jsonify({'error': 'Interests and strengths must not be empty.'}), 400
+
+        # Validate interests and strengths against the loaded categories
+        invalid_interests = [i for i in interests if i not in all_interests]
+        invalid_strengths = [s for s in strengths if s not in all_strengths]
+
+        if invalid_interests:
+            return jsonify({'error': f"Invalid interests: {', '.join(invalid_interests)}"}), 400
+        if invalid_strengths:
+            return jsonify({'error': f"Invalid strengths: {', '.join(invalid_strengths)}"}), 400
+
+        # Combine interests and strengths into a single input
+        input_features = [
+            1 if i in interests else 0 for i in all_interests
+        ] + [
+            1 if s in strengths else 0 for s in all_strengths
+        ]
+
+        # Predict using the model
+        genre_pred = model.predict([input_features])  # Input passed as a list
+        genre_pred_result = genre_pred[0]  # Extract the prediction from the array
+
+        return jsonify({'genre': genre_pred_result})
+
+    except Exception as e:
+        print(f"Error occurred: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/get_interest_strength', methods=['POST'])
+def get_interest_strength():
     data = request.json
-    interest = data.get('interest')
-    strength = data.get('strength')
+    activity_id = data.get('activity_id')
+    username = data.get('username')
+    email = data.get('email')
 
-    # Validate that both interest and strength are provided
-    if not interest or not strength:
-        return jsonify({'error': 'Both "interests" and "strengths" are required.'}), 400
+    activity_id = ObjectId(activity_id)  # Ensure activity_id is an ObjectId
 
-    # Encode interest and strength
-    encoded_interest = label_encoder_interests.transform([interest])[0]
-    encoded_strength = label_encoder_strengths.transform([strength])[0]
-
-    # Predict using the logistic model
-    genre_encoded = logistic_model.predict([[encoded_interest, encoded_strength]])[0]
-
-    # Decode the genre
-    genre = label_encoder_genre.inverse_transform([genre_encoded])[0]
-
-    return jsonify({
-        'genre': genre
+    # Query the volunteer collection
+    result = mongo.db.join_activity.find_one({
+        '_id': activity_id,
+        'username': username,
+        'email': email
     })
+
+    print(f"Querying volunteer collection with: activity_id={activity_id}, username={username}, email={email}")
+    print(f"Query result: {result}")
+
+    if result:
+        # Safeguard with default empty list in case 'interest' or 'strength' is None
+        interests = result.get('interest', [])
+        strengths = result.get('strength', [])
+
+        # Ensure interests and strengths are lists
+        if isinstance(interests, list):
+            interest = interests
+        else:
+            interest = []
+
+        if isinstance(strengths, list):
+            strength = strengths
+        else:
+            strength = []
+
+        return jsonify({
+            'interest': interest,
+            'strength': strength
+        })
+    else:
+        return jsonify({'error': 'Record not found'}), 404
     
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -135,7 +204,7 @@ def signup():
     except Exception as e:
         print(f"Error during registration: {str(e)}")  # Log error
         return jsonify({'message': 'An error occurred while registering the user', 'error': str(e)}), 500
-
+    
 @app.route('/api/signin', methods=['POST'])
 def signin():
     try:
@@ -1076,37 +1145,6 @@ def get_joined_activity_details():
         'strength': strength,
         'interest': interest
     })
-
-@app.route('/get_interest_strength', methods=['POST'])
-def get_interest_strength():
-    data = request.json
-    activity_id = data.get('activity_id')
-    username = data.get('username')
-    email = data.get('email')
-
-    activity_id = ObjectId(activity_id)  # Ensure activity_id is an ObjectId
-
-    # Query the join_activity collection
-    result = join_activity_collection.find_one({
-        '_id': activity_id,
-        'username': username,
-        'email': email
-    })
-
-    print(f"Querying join_activity collection with: activity_id={activity_id}, username={username}, email={email}")
-    print(f"Query result: {result}")
-
-    if result:
-        # Retrieve the first item from the arrays
-        interest = result.get('interest', [None])[0]  # Safeguard with default empty list
-        strength = result.get('strength', [None])[0]  # Safeguard with default empty list
-
-        return jsonify({
-            'interest': interest,
-            'strength': strength
-        })
-    else:
-         return jsonify({'error': 'Record not found'}), 404
     
 if __name__ == '__main__':
     app.run(debug=True)
