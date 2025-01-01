@@ -102,23 +102,23 @@ const UpcomingActivities = ({ userId }) => {
 
   // Render each activity in the list
   const renderActivity = ({ item }) => (
-    <View style={styles.activityCard}>
+    <View style={styles.activityCardStyle}>
       {item.image_url ? (
-        <Image source={{ uri: item.image_url }} style={styles.activityImage} />
+        <Image source={{ uri: item.image_url }} style={styles.activityImageStyle} />
       ) : (
-        <View style={styles.noImageContainer}>
-          <Text style={styles.noImageText}>No Image Available</Text>
+        <View style={styles.noImageContainerStyle}>
+          <Text style={styles.noImageTextStyle}>No Image Available</Text>
         </View>
       )}
-      <View style={styles.activityDetails}>
-        <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
-        <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
-        <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+      <View style={styles.activityDetailsStyle}>
+        <Text style={styles.activityNameStyle}>{item.activity_name || 'Unknown Activity'}</Text>
+        <Text style={styles.activityLocationStyle}>{item.location || 'Unknown Location'}</Text>
+        <Text style={styles.activityDateStyle}>{item.date || 'Unknown Date'}</Text>
         <TouchableOpacity 
-          style={styles.completeButton}
+          style={styles.completeButtonStyle}
           onPress={() => handleComplete(item._id)}
         >
-          <Text style={styles.completeButtonText}>Complete</Text>
+          <Text style={styles.completeButtonTextStyle}>Complete</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -745,6 +745,72 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 14,
+  },
+  activityCardStyle: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  activityImageStyle: {
+    width: '100%',
+    height: 150,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  noImageContainerStyle: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 150,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    backgroundColor: '#F0F0F0',
+  },
+  noImageTextStyle: {
+    fontSize: 16,
+    color: '#888',
+  },
+  activityDetailsStyle: {
+    padding: 16,
+  },
+  activityNameStyle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  activityLocationStyle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  activityDateStyle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  completeButtonStyle: {
+    backgroundColor: '#00BFAE',
+    borderRadius: 6,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  completeButtonTextStyle: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

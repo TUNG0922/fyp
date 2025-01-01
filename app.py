@@ -378,7 +378,7 @@ def join_activity():
         # Create a notification for the user
         notifications_collection.insert_one({
             'user_id': user_id,
-            'message': f'You have joined the activity "{activity_name}".',
+            'message': f'You have applied to join the activity "{activity_name}". Your application is pending, Please wait.',
             'activity_id': activity_id,
             'activity_name': activity_name,
             'genre': genre,  # Include genre
@@ -887,37 +887,48 @@ def get_messages(activity_id, user_id):
 @app.route('/api/reject_activity', methods=['POST'])
 def reject_activity():
     try:
-        # Log the raw data received for debugging
         print("Raw data received:", request.data)
+        data = request.json
+        print("Parsed JSON data:", data)
 
-        # Access the JSON payload directly
-        data = request.json  # This is equivalent to request.get_json()
-        print("Parsed JSON data:", data)  # Log the parsed data
-
-        # Retrieve the join_activity_id from the request
         join_activity_id = data.get("join_activity_id")
-
-        # Validate join_activity_id presence and format
         if not join_activity_id:
             return jsonify({"error": "Activity ID is required"}), 400
 
-        # Attempt to create ObjectId (this will fail if join_activity_id is not valid)
         try:
             object_id = ObjectId(join_activity_id)
         except Exception as e:
             print("Invalid ObjectId:", e)
             return jsonify({"error": "Invalid Activity ID format"}), 400
 
-        # Access the join_activity collection and find the document by _id
         activity = join_activity_collection.find_one({"_id": object_id})
-
         if not activity:
+            print("Activity not found for ID:", join_activity_id)
             return jsonify({"error": "Activity not found"}), 404
 
-        # Remove the activity from the join_activity collection
+        activity_name = activity.get("activity_name", "Unknown Activity")
+        username = activity.get("username", "Unknown User")
+
+        print("Deleting activity:", activity)
         join_activity_collection.delete_one({"_id": object_id})
 
-        # Return success response
+        notification_data = {
+            "user_id": activity["user_id"],
+            "message": f"Your application for the activity '{activity_name}' was rejected.",
+            "activity_id": join_activity_id,
+            "timestamp": datetime.utcnow(),
+        }
+        print("User notification data:", notification_data)
+        notifications_collection.insert_one(notification_data)
+
+        organization_admin_notification = {
+            "user_id": activity["activity_user_id"],
+            "message": f"The activity '{activity_name}' by user '{username}' was rejected.",
+            "timestamp": datetime.utcnow(),
+        }
+        print("Admin notification data:", organization_admin_notification)
+        notifications_organizationadmin_collection.insert_one(organization_admin_notification)
+
         return jsonify({"message": "Activity rejected successfully"}), 200
 
     except Exception as e:
@@ -951,7 +962,7 @@ def get_user_list():
         print("Completed Activities Retrieved:", completed_activities)  # Log result for debugging
         
         if not completed_activities:
-            return jsonify({"error": "No completed activities found for the provided activity ID"}), 404
+            return jsonify({"error": "No users found that join this activity."}), 404
         
         # Extract the user list (username, email) from the activities
         user_list = [

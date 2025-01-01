@@ -1,14 +1,14 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Picker } from '@react-native-picker/picker'; // Import Picker for dropdown
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, FlatList, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
-import { Picker } from '@react-native-picker/picker'; // Import Picker for dropdown
-import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Import the filter icon
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import NotificationOrganizationAdmin from './NotificationOrganizationAdmin'; // Import the NotificationOrganizationAdmin component
 
 const HomeScreen = ({ route }) => {
   const { userId, username, email } = route.params; // Destructure userName and userEmail
@@ -94,12 +94,15 @@ const HomeScreen = ({ route }) => {
 
   const handleAccept = async (activityId) => {
     try {
-        console.log("Sending activityId:", activityId); // Confirm the ID being sent
-
         if (!activityId) {
             Alert.alert('Error', 'No activity ID provided.');
-            return; // Exit the function early instead of throwing an error
+            return; // Exit the function early
         }
+
+        // Display the alert immediately upon clicking the button
+        Alert.alert('Accepted', 'You have accepted the application!');
+
+        console.log("Sending activityId:", activityId); // Confirm the ID being sent
 
         const response = await axios.post(
             'http://10.0.2.2:5000/api/accept_activity',
@@ -110,7 +113,7 @@ const HomeScreen = ({ route }) => {
         console.log('Response:', response.data);
 
         if (response.data.message === 'Activity moved to completed') {
-            Alert.alert('Accepted', 'The activity has been accepted successfully!');
+            // Remove the accepted activity from the state
             setJoinedActivities((prevActivities) =>
                 prevActivities.filter((activity) => activity.activity_id !== activityId) // Correct field name
             );
