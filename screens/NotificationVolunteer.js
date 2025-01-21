@@ -31,7 +31,9 @@ const NotificationVolunteer = ({ userId }) => {
   return (
     <View style={styles.container}>
       {notifications.length === 0 ? (
-        <Text>No notifications available</Text>
+        <View style={styles.noNotificationsContainer}>
+          <Text style={styles.noNotificationsText}>No notifications available</Text>
+        </View>
       ) : (
         <FlatList
           data={notifications}
@@ -85,6 +87,30 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: '#666',
+  },
+  // Adjusted style for the "No notifications" message to be positioned at the top with equal left and right margin
+  noNotificationsContainer: {
+    marginTop: 20, // Space from the top
+    alignItems: 'center', // Center horizontally
+    paddingVertical: 12,  // Vertical padding
+    paddingHorizontal: 24, // Horizontal padding
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  noNotificationsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#777',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginHorizontal: 20,
   },
 });
 

@@ -43,24 +43,26 @@ const EditProfileVolunteer = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Edit Profile</Text>
+      <View style={styles.card}>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Username:</Text>
+          <Text style={styles.infoText}>{username}</Text>
+        </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Username:</Text>
-        <Text style={styles.infoText}>{username}</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.infoText}>{email}</Text>
+        </View>
       </View>
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.infoText}>{email}</Text>
-      </View>
-
+      <Text style={styles.subHeader}>Change Password</Text>
       <TextInput
         style={styles.input}
         value={newPassword}
         onChangeText={setNewPassword}
         placeholder="New Password"
         secureTextEntry
+        placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
@@ -68,10 +70,11 @@ const EditProfileVolunteer = ({ route, navigation }) => {
         onChangeText={setConfirmPassword}
         placeholder="Confirm New Password"
         secureTextEntry
+        placeholderTextColor="#888"
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save Password</Text>
+        <Text style={styles.buttonText}>Save Changes</Text>
       </TouchableOpacity>
     </View>
   );
@@ -80,12 +83,18 @@ const EditProfileVolunteer = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#F5F5F5',
+    padding: 20,
+    backgroundColor: '#FAFAFA',
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
     marginBottom: 20,
   },
   infoContainer: {
@@ -93,28 +102,41 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: '#333',
+    color: '#7F8C8D',
+    fontWeight: '500',
   },
   infoText: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: 18,
+    color: '#2C3E50',
+    fontWeight: '600',
+  },
+  subHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#34495E',
+    marginBottom: 10,
   },
   input: {
-    height: 40,
-    borderColor: '#ccc',
+    height: 50,
+    borderColor: '#DADADA',
     borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 15,
+    color: '#34495E',
   },
   button: {
-    backgroundColor: '#547DBE',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#3498DB',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
+    marginTop: 20,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

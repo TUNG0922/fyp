@@ -33,34 +33,43 @@ const PendingActivities = ({ userId }) => {
     fetchPendingActivities();
   }, [userId]);
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#547DBE" />;
-  }
+  const renderActivity = ({ item }) => (
+    <View style={styles.activityCardStyle}>
+      {item.image_url ? (
+        <Image source={{ uri: item.image_url }} style={styles.activityImageStyle} />
+      ) : (
+        <View style={styles.noImageContainerStyle}>
+          <Text style={styles.noImageTextStyle}>No Image Available</Text>
+        </View>
+      )}
+      <View style={styles.activityDetailsStyle}>
+        <Text style={styles.activityNameStyle}>{item.activity_name || 'Unknown Activity'}</Text>
+        <Text style={styles.activityLocationStyle}>{item.location || 'Unknown Location'}</Text>
+        <Text style={styles.activityDateStyle}>{item.date || 'Unknown Date'}</Text>
+        <TouchableOpacity
+          style={styles.completeButtonStyle}
+          onPress={() => handleComplete(item._id)} // Handle completion if needed
+        >
+          <Text style={styles.completeButtonTextStyle}>Complete</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      {pendingActivities.length === 0 ? (
-        <Text style={styles.noActivitiesText}>No pending activities found.</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <FlatList
           data={pendingActivities}
-          keyExtractor={(item) => item.activity_id}
-          renderItem={({ item }) => (
-            <View style={styles.activityCard}>
-              <Image
-                source={{ uri: item.image }}
-                style={styles.activityImage}
-                onError={() => console.log('Error loading image:', item.image)}
-                resizeMode="cover"
-              />
-              <Text style={styles.activityName}>{item.activity_name}</Text>
-              <Text>Date: {item.date}</Text>
-              <Text>Location: {item.location}</Text>
-              <Text>Joined By: {item.username}</Text>
-              <Text>Email: {item.email}</Text>
+          keyExtractor={(item) => item._id.toString()}
+          renderItem={renderActivity}
+          ListEmptyComponent={
+            <View style={styles.noPendingContainer}>
+              <Text style={styles.noPendingText}>No pending activities found.</Text>
             </View>
-          )}
-          contentContainerStyle={{ paddingBottom: 20 }}
+          }
         />
       )}
     </View>
@@ -137,7 +146,11 @@ const UpcomingActivities = ({ userId }) => {
           data={activities}
           keyExtractor={(item) => item._id.toString()}
           renderItem={renderActivity}
-          ListEmptyComponent={<Text>No completed activities found.</Text>}
+          ListEmptyComponent={
+            <View style={styles.noUpcomingActivitiesContainer}>
+              <Text style={styles.noUpcomingActivitiesTextStyle}>No upcoming activities found.</Text>
+            </View>
+          }
         />
       )}
     </View>
@@ -202,26 +215,29 @@ const CompletedActivities = ({ userId }) => {
   };
 
   const renderActivity = ({ item }) => (
-    <View style={styles.activityCard}>
-      {item.image ? (
-        <Image 
-          source={{ uri: item.image }} 
-          style={styles.activityImage} 
-          onError={() => console.error('Failed to load image:', item.image)} 
-        />
-      ) : (
-        <View style={styles.noImageContainer}>
-          <Text style={styles.noImageText}>No Image Available</Text>
-        </View>
-      )}
-      <View style={styles.activityDetails}>
-        <Text style={styles.activityName}>{item.activity_name || 'Unknown Activity'}</Text>
-        <Text style={styles.activityLocation}>{item.location || 'Unknown Location'}</Text>
-        <Text style={styles.activityDate}>{item.date || 'Unknown Date'}</Text>
+  <View style={styles.activityCardCompleted}>
+    {/* Display Image */}
+    {item.image ? (
+      <Image
+        source={{ uri: item.image }}
+        style={styles.activityImageCompleted}
+        onError={() => console.error('Failed to load image:', item.image)}
+      />
+    ) : (
+      <View style={styles.noImageContainerCompleted}>
+        <Text style={styles.noImageTextCompleted}>No Image Available</Text>
       </View>
-    </View>
-  );
+    )}
 
+    {/* Activity Details */}
+    <View style={styles.activityDetailsCompleted}>
+      <Text style={styles.activityNameCompleted}>{item.activity_name || 'Unknown Activity'}</Text>
+      <Text style={styles.activityGenreCompleted}>🎭 Genre: {item.genre || 'N/A'}</Text>
+      <Text style={styles.activityLocationCompleted}>📍 {item.location || 'Unknown Location'}</Text>
+      <Text style={styles.activityDateCompleted}>📅 {item.date || 'Unknown Date'}</Text>
+    </View>
+  </View>
+);
   return (
     <View style={styles.container}>
       {loading ? (
@@ -231,7 +247,11 @@ const CompletedActivities = ({ userId }) => {
           data={activities}
           keyExtractor={(item) => item._id}
           renderItem={renderActivity}
-          ListEmptyComponent={<Text>No completed activities available.</Text>}  // Display a message if no activities are found
+          ListEmptyComponent={
+            <View style={styles.noUpcomingActivitiesContainer}>
+              <Text style={styles.noActivitiesText}>No upcoming activities available.</Text>
+            </View>
+          }
         />
       )}
     </View>
@@ -303,11 +323,19 @@ const DiscoverScreen = ({ username, userId, email, role, strength, previous_expe
   };
   
   const applyFilters = () => {
-    const filtered = activities.filter(activity =>
-      selectedGenres.includes(activity.genre?.toLowerCase() || '')
-    );
-    setFilteredActivities(filtered);
-    setFilterVisible(false);
+    // Check if any genres are selected; if none are selected, show all activities
+    if (selectedGenres.length === 0) {
+      setFilteredActivities(activities); // Reset to show all activities
+    } else {
+      const filtered = activities.filter(activity =>
+        selectedGenres.some(genre =>
+          activity.genre?.toLowerCase().includes(genre.toLowerCase())
+        )
+      );
+      setFilteredActivities(filtered); // Update the filtered activities state
+    }
+  
+    setFilterVisible(false); // Hide the filter modal or UI
   };
 
   const clearFilters = () => {
@@ -344,7 +372,7 @@ const DiscoverScreen = ({ username, userId, email, role, strength, previous_expe
       {isFilterVisible && (
         <View style={styles.filterPanel}>
           <Text style={styles.filterTitle}>Filter by Genre:</Text>
-          {['philanthropy', 'service learning', 'community service', 'social action'].map(
+          {['philanthropy', 'service-learning', 'community service', 'social action'].map(
             (genre) => (
               <TouchableOpacity
                 key={genre}
@@ -376,68 +404,69 @@ const DiscoverScreen = ({ username, userId, email, role, strength, previous_expe
         <ActivityIndicator size="large" color="#547DBE" />
       ) : (
         <FlatList
-          data={filteredActivities}
-          keyExtractor={(item) => {
-            console.log('Key Extractor for Item:', item._id); // Logs each item's _id
-            return item._id;
-          }}
-          renderItem={({ item }) => {
-            console.log('Rendering Item:', item); // Logs the item being rendered
-            return (
-              <View style={styles.activityCard}>
-                <Image
-                  source={{ uri: item.imageUri }}
-                  style={styles.activityImage}
-                  onError={(e) => console.log('Error loading image:', item.imageUri, e.nativeEvent.error)}
-                  resizeMode="cover"
-                />
-                <Text style={styles.activityName}>{item.name}</Text>
-                <Text>{item.date}</Text>
-                <Text>{item.location}</Text>
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => {
-                      const activityUserId = item.userId; // Extract userId from the activity object
-                      console.log('Navigating to ActivityDetailsVolunteer with:', {
-                        activity: item,
-                        userId: activityUserId, // Use the activity's userId
-                        name: username,
-                        email: email,
-                        image: item.imageUri,
-                        role: role,
-                        strength: strength,
-                        previous_experiences: previous_experiences,
-                      });
-                      navigation.navigate('ActivityDetailsVolunteer', {
-                        activity: item,
-                        userId: userId, // Pass the activity's userId here
-                        name: username,
-                        email: email,
-                        image: item.imageUri,
-                        role: role,
-                        strength: strength,
-                        previous_experiences: previous_experiences,
-                        interest: interest // Include interest here
-                      });
-                    }}
-                  >
-                    <Text style={styles.buttonText}>Details</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.button, styles.shareButton]}
-                    onPress={() => {
-                      console.log('Sharing Item:', item); // Logs the item being shared
-                      handleShare(item);
-                    }}
-                  >
-                    <Text style={styles.buttonText}>Share</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          }}
-        />
+  data={filteredActivities}
+  keyExtractor={(item) => item._id}
+  renderItem={({ item }) => (
+    <View style={styles.activityCard}>
+      <Image
+        source={{ uri: item.imageUri }}
+        style={styles.activityImage}
+        onError={(e) =>
+          console.log('Error loading image:', item.imageUri, e.nativeEvent.error)
+        }
+        resizeMode="cover"
+      />
+      <View style={styles.cardContent}>
+        <Text style={styles.activityName}>{item.name}</Text>
+        <Text style={styles.activityDate}>📅 {item.date}</Text>
+        <Text style={styles.activityLocation}>📍 {item.location}</Text>
+        <Text style={styles.activityGenre}>
+          🎭 {item.genre || 'No genre specified'}
+        </Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.detailsButton}
+            onPress={() => {
+              const activityUserId = item.userId;
+              console.log('Navigating to ActivityDetailsVolunteer with:', {
+                activity: item,
+                userId: activityUserId,
+                name: username,
+                email: email,
+                image: item.imageUri,
+                role: role,
+                strength: strength,
+                previous_experiences: previous_experiences,
+              });
+              navigation.navigate('ActivityDetailsVolunteer', {
+                activity: item,
+                userId: userId,
+                name: username,
+                email: email,
+                image: item.imageUri,
+                role: role,
+                strength: strength,
+                previous_experiences: previous_experiences,
+                interest: interest,
+              });
+            }}
+          >
+            <Text style={styles.buttonText}>Details</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={() => {
+              console.log('Sharing Item:', item);
+              handleShare(item);
+            }}
+          >
+            <Text style={styles.buttonText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  )}
+/>
       )}
     </View>
   );
@@ -448,32 +477,32 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
   const navigation = useNavigation();
 
   const handleLogout = async () => {
-  Alert.alert(
-    'Logout Confirmation',
-    'Are you sure you want to log out?',
-    [
-      { 
-        text: 'Yes', 
-        onPress: async () => {
-          try {
-            // Clear any stored user data
-            await AsyncStorage.clear();
-            
-            // Navigate to the SignInScreen
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'SignIn' }],
-            });
-          } catch (error) {
-            console.error('Error during logout:', error);
-            Alert.alert('Error', 'An error occurred while logging out. Please try again.');
-          }
-        }
-      },
-      { text: 'Cancel', style: 'cancel' }
-    ]
-  );
-};
+    Alert.alert(
+      'Logout Confirmation',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              // Clear any stored user data
+              await AsyncStorage.clear();
+
+              // Navigate to the SignInScreen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }],
+              });
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'An error occurred while logging out. Please try again.');
+            }
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -482,23 +511,23 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
         <Text style={styles.userInfo}>Email: {email}</Text>
         <Text style={styles.userInfo}>Role: {role}</Text>
       </View>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={() => 
+      <View style={styles.buttonContainerStyle}>
+        <TouchableOpacity
+          style={styles.buttonStyle}
+          onPress={() =>
             navigation.navigate('EditProfileVolunteer', { userId, username, email, password, role })
           }
         >
-          <Text style={styles.buttonText}>Edit Profile</Text>
+          <Text style={styles.buttonTextStyle}>Edit Profile</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.button}
+        <TouchableOpacity
+          style={styles.buttonStyle}
           onPress={() => navigation.navigate('VolunteerHistory', { userId })}
         >
-          <Text style={styles.buttonText}>Volunteer History</Text>
+          <Text style={styles.buttonTextStyle}>Volunteer History</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          <Text style={styles.buttonTextStyle}>Logout</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -599,44 +628,37 @@ const styles = StyleSheet.create({
   },
   // Card to display each activity
   activityCard: {
-    backgroundColor: 'white',
-    borderRadius: 15, // Rounded corners
-    padding: 15, // More padding for comfortable spacing
-    marginVertical: 12, // Increased vertical margin for separation
-    shadowColor: '#000', // Subtle shadow effect
-    shadowOffset: {
-      width: 0,
-      height: 4, // Deeper shadow for more depth
-    },
-    shadowOpacity: 0.1, // Lighter shadow opacity
-    shadowRadius: 5, // Softer shadow radius
-    elevation: 3, // For Android, adjust elevation for shadow
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    margin: 10,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-
+  cardContent: {
+    padding: 15,
+  },
   // Image style for each activity card
   activityImage: {
     width: '100%',
-    height: 180, // Taller image
-    borderRadius: 15, // Rounded corners to match card
-    marginBottom: 12, // Space between image and text
-    resizeMode: 'cover', // Ensure the image covers the area correctly
+    height: 150,
+    resizeMode: 'cover',
   },
-
   // Style for activity name
   activityName: {
-    fontSize: 20, // Larger font size for name
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#333',
     marginBottom: 5,
-    color: '#333', // Dark color for readability
   },
-
   // Button container for action buttons
   buttonContainer: {
-    flexDirection: 'column', // Change to column for vertical arrangement
-    justifyContent: 'center', // Vertically align the buttons in the center
-    marginTop: 15, // Optional: You can adjust the spacing from the top
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
-  
   // Update the button style if you need extra spacing between buttons
   button: {
     backgroundColor: '#547DBE', // Primary button color
@@ -646,12 +668,23 @@ const styles = StyleSheet.create({
     marginVertical: 10, // Added margin between buttons
     alignItems: 'center', // Center button text horizontally
   },
-
+  detailsButton: {
+    backgroundColor: '#547DBE',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+    alignItems: 'center',
+  },
   // Specific style for the share button (yellow)
   shareButton: {
-    backgroundColor: '#FFC107', // Yellow for the share button
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginLeft: 5,
+    alignItems: 'center',
   },
-
   // Button text style
   buttonText: {
     color: 'white',
@@ -659,41 +692,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: 'bold', // Bold button text
   },
-
   // Logout button style
   logoutButton: {
-    backgroundColor: '#D9534F', // Red for logout button
-    padding: 15,
-    borderRadius: 8,
-    marginTop: 20, // Space between the last button
+    backgroundColor: '#ff5252',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
   },
-
-  // Logout button text
   logoutButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 16, // Clear text for logout action
+    color: '#fff',
+    fontWeight: 'bold',
   },
-
   // Profile info container
   profileInfoContainer: {
-    marginBottom: 25, // More space after profile details
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-
   // Profile header text (name or title)
   profileText: {
-    fontSize: 22, // Larger size for profile title
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 8, // Add space under the title
-    color: '#333', // Dark color for readability
+    marginBottom: 10,
   },
-
   // User information text style
   userInfo: {
-    fontSize: 18, // Slightly larger font for user info
-    color: '#555', // Slightly lighter color for info text
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
   },
-
   // Empty activity state text style
   emptyStateText: {
     fontSize: 16,
@@ -741,10 +773,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     flex: 0.48,
     alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 14,
   },
   activityCardStyle: {
     backgroundColor: '#FFFFFF',
@@ -811,6 +839,147 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  activityDate: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
+  },
+  activityLocation: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
+  },
+  activityGenre: {
+    fontSize: 14,
+    color: '#2e8b57', // Dark green for genre text
+    marginBottom: 6,
+  },
+  buttonContainerStyle: {
+    marginTop: 20,
+  },
+  buttonTextStyle: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  buttonStyle: {
+    backgroundColor: '#4CAF50', // A vibrant green color
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4, // Add a subtle shadow for depth
+  },
+  activityCardCompleted: {
+    backgroundColor: '#d8f3dc', // Pastel green for completed activities
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  activityImageCompleted: {
+    width: '100%',
+    height: 160,
+    resizeMode: 'cover',
+  },
+  noImageContainerCompleted: {
+    width: '100%',
+    height: 160,
+    backgroundColor: '#b7b7a4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noImageTextCompleted: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activityDetailsCompleted: {
+    padding: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#cce3de', // Subtle line for separation
+  },
+  activityNameCompleted: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1b4332', // Dark green for title
+    marginBottom: 6,
+  },
+  activityGenreCompleted: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#40916c', // Genre-specific light green
+    marginBottom: 6,
+  },
+  activityLocationCompleted: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#344e41',
+    marginBottom: 6,
+  },
+  activityDateCompleted: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#6c757d', // Neutral gray for date
+  },
+  noPendingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  noPendingText: {
+    fontSize: 16, // Smaller font size for compact design
+    fontWeight: '500', // Lighter text weight
+    color: '#777', // Softer text color for better legibility
+    textAlign: 'center',
+    marginHorizontal: 20, // To avoid text touching edges
+  },
+  noUpcomingActivitiesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  noUpcomingActivitiesTextStyle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#777',
+    textAlign: 'center',
+    marginHorizontal: 20,
   },
 });
 

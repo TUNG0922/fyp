@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "VolunteerLinks",
-    "slug": "VolunteerLinks",
+    "slug": "impactconnect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jinyou.impactconnect"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +26,12 @@
     },
     "assetBundlePatterns": [
       "assets/**/*"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "883152db-42df-43d8-a23e-614db29aff0b"
+      }
+    },
+    "owner": "jinyou"
   }
 }

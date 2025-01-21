@@ -276,7 +276,11 @@ return (
           </TouchableOpacity>
         );
       }}           
-      ListEmptyComponent={<Text>No activities available for response.</Text>}
+      ListEmptyComponent={
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>No activities available.</Text>
+        </View>
+      }
     />
   </View>
 );
@@ -647,7 +651,7 @@ const DiscoverScreen = ({ route, navigation }) => {
       )}
 
       {/* Cancel and Submit Buttons */}
-      <View style={styles.buttonContainer}>
+      <View style={styles.buttonFormContainer}>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>Submit</Text>
         </TouchableOpacity>
@@ -700,24 +704,24 @@ const ProfileScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-    <View style={styles.infoContainer}>
-      <Text style={styles.infoText}>Name: <Text style={styles.value}>{username}</Text></Text>
-      <Text style={styles.infoText}>Email: <Text style={styles.value}>{email}</Text></Text>
-      <Text style={styles.infoText}>Role: <Text style={styles.value}>{role}</Text></Text>
-    </View>
+      <View style={styles.infoContainer}>
+        <Text style={styles.infoText}>Name: <Text style={styles.value}>{username}</Text></Text>
+        <Text style={styles.infoText}>Email: <Text style={styles.value}>{email}</Text></Text>
+        <Text style={styles.infoText}>Role: <Text style={styles.value}>{role}</Text></Text>
+      </View>
 
-    <View style={styles.buttonsRow}>
-      <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
-        <Text style={styles.buttonText}>Edit Profile</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonsRow}>
+        <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
+          <Text style={styles.buttonText}>Edit Profile</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Logout</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  </View>
-    );
-  };
+  );
+};
 
 const Tab = createBottomTabNavigator();
 
@@ -1009,26 +1013,30 @@ const styles = StyleSheet.create({
   
   // Logout Button
   logoutButton: {
-    backgroundColor: '#FF6347',
-    padding: 15,
-    alignItems: 'center',
+    backgroundColor: '#FF4B4B', // Red color for logout
+    paddingVertical: 12,
+    paddingHorizontal: 25,
     borderRadius: 5,
     flex: 1,
+    alignItems: 'center',
+    elevation: 3, // Slight shadow for depth
   },
-
   logoutButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
   },
 
   // Edit Button
   editButton: {
     backgroundColor: '#547DBE',
-    padding: 15,
-    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 25,
     borderRadius: 5,
     flex: 1,
     marginRight: 10,
+    alignItems: 'center',
+    elevation: 3, // Slight shadow for depth
   },
 
   editButtonText: {
@@ -1044,8 +1052,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 5,
     flex: 1,
+    marginBottom: 60, // Added margin to move the submit button upwards
   },
-
+  
   submitButtonText: {
     color: '#fff',
     fontSize: 16,
@@ -1065,8 +1074,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5, // Shadow blur radius
     flex: 1, // Ensures buttons have equal width
     marginHorizontal: 5, // Small margin between buttons
+    marginBottom: 60, // Added margin to move the cancel button upwards
   },
-
+  
   cancelButtonText: {
     color: '#fff', // White text for contrast
     fontWeight: 'bold',
@@ -1141,8 +1151,8 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: '#fff',
-    fontSize: 14,
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 
   container: {
@@ -1152,9 +1162,15 @@ const styles = StyleSheet.create({
   },
 
   infoContainer: {
-    marginBottom: 30,
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    marginBottom: 20,
   },
-
   infoText: {
     fontSize: 16,
     color: '#333',
@@ -1163,6 +1179,7 @@ const styles = StyleSheet.create({
 
   value: {
     fontWeight: 'bold',
+    color: '#547DBE', // Color for the value text
   },
 
   acceptButton: {
@@ -1261,6 +1278,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f9f9f9',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#777',
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+  buttonFormContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginTop: 20,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f8f8',
+    padding: 20,
   },
 });
 

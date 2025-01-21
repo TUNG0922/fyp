@@ -37,12 +37,19 @@ const NotificationOrganizationAdmin = ({ route }) => {
     </View>
   );
 
+  const renderEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>No notifications available</Text>
+    </View>
+  );
+
   return (
     <View style={styles.screenContainer}>
       <FlatList
         data={notifications}
         renderItem={renderNotificationItem}
         keyExtractor={(item) => item._id}
+        ListEmptyComponent={renderEmptyComponent} // Display message when no notifications
       />
     </View>
   );
@@ -63,6 +70,30 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#777',
+    textAlign: 'center',
+    marginHorizontal: 20,
   },
 });
 

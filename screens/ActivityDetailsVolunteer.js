@@ -1,7 +1,7 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, Button, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { AirbnbRating } from 'react-native-ratings';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Button, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AirbnbRating } from 'react-native-ratings';
 
 const ActivityDetailsVolunteer = () => {
   const navigation = useNavigation();
@@ -19,6 +19,7 @@ const ActivityDetailsVolunteer = () => {
   const [rating, setRating] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
   const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
     const handleScroll = (event) => {
       const contentHeight = event.nativeEvent.contentSize.height;
@@ -123,6 +124,9 @@ const ActivityDetailsVolunteer = () => {
 
   const handleDeleteReview = async (reviewId) => {
     try {
+      // Optimistically update the UI
+      setReviews((prevReviews) => prevReviews.filter((review) => review._id !== reviewId));
+  
       const response = await fetch(`http://10.0.2.2:5000/api/delete_review/${reviewId}`, {
         method: 'DELETE',
       });
@@ -130,14 +134,15 @@ const ActivityDetailsVolunteer = () => {
       const data = await response.json();
       if (response.ok) {
         alert(data.message || 'Review deleted successfully');
-        // Optionally, refresh the reviews list after deletion
-        // fetchReviews(); // Replace with your function to reload the reviews
       } else {
         alert(data.message || 'Failed to delete the review');
+        // If deletion fails, re-add the review to the state
+        fetchReviews(); // Refresh the list to reflect the correct state
       }
     } catch (error) {
       alert('An error occurred while deleting the review');
       console.error(error);
+      fetchReviews(); // Refresh the list to recover the state
     }
   };  
 

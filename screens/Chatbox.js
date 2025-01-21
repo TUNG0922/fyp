@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const Chatbox = ({ route }) => {
   const { activity, userId } = route.params || {};
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -37,7 +37,6 @@ const Chatbox = ({ route }) => {
       return;
     }
 
-    setSending(true);
     const messageData = {
       userId,
       activityId: activity._id,
@@ -45,7 +44,6 @@ const Chatbox = ({ route }) => {
       name: activity.name,
       role: 'Organization Admin',
       createdAt: new Date().toISOString(),
-      activity_user_id: activity.userId  
     };
 
     try {
@@ -67,99 +65,122 @@ const Chatbox = ({ route }) => {
       console.error('Error sending message:', err);
       setError('Error sending message');
       Alert.alert('Error', 'An error occurred while sending the message');
-    } finally {
-      setSending(false);
     }
   };
 
   const renderMessage = ({ item }) => (
-    <View style={[styles.messageItem, item.role === 'Organization Admin' ? styles.rightAlign : styles.leftAlign]}>
+    <View
+      style={[
+        styles.messageItem,
+        item.role === 'Organization Admin' ? styles.rightAlign : styles.leftAlign,
+      ]}
+    >
       <Text style={styles.messageAuthor}>{item.name}</Text>
       <Text style={styles.messageText}>{item.message}</Text>
-      <Text style={styles.messageDate}>{new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString()}</Text>
+      <Text style={styles.messageDate}>
+        {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       {error && <Text style={styles.errorText}>{error}</Text>}
-      {sending && <ActivityIndicator size="large" color="#00BFAE" />}
       <FlatList
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.chatContainer}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Type a message..."
-        value={newMessage}
-        onChangeText={setNewMessage}
-      />
-      <Button
-        title={sending ? 'Sending...' : 'Send'}
-        onPress={handleSendMessage}
-        color="#00BFAE"
-        disabled={sending}
-      />
-    </View>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          value={newMessage}
+          onChangeText={setNewMessage}
+        />
+        <TouchableOpacity onPress={handleSendMessage} style={styles.sendButton}>
+          <Ionicons name="send" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
-    backgroundColor: '#fff' 
+  container: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
   },
-
-  messageItem: { 
-    padding: 12, 
-    marginBottom: 12, 
-    borderRadius: 8, 
-    backgroundColor: '#f1f1f1' 
+  chatContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 10,
   },
-
-  messageAuthor: { 
-    fontWeight: 'bold', 
-    color: '#333' 
+  messageItem: {
+    maxWidth: '80%',
+    padding: 10,
+    marginVertical: 5,
+    borderRadius: 12,
   },
-
-  messageText: { 
-    color: '#444', 
-    fontSize: 16 
-  },
-
-  messageDate: { 
-    fontSize: 12, 
-    color: '#888', 
-    marginTop: 5 
-  },
-
-  input: { 
-    height: 40, 
-    borderColor: '#ccc', 
-    borderWidth: 1, 
-    borderRadius: 5, 
-    marginVertical: 10, 
-    paddingLeft: 10, 
-    fontSize: 16 
-  },
-
-  errorText: { 
-    color: 'red', 
-    textAlign: 'center', 
-    marginBottom: 10 
-  },
-
   leftAlign: {
     alignSelf: 'flex-start',
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#E0E0E0',
   },
-
   rightAlign: {
     alignSelf: 'flex-end',
-    backgroundColor: '#00BFAE',
+    backgroundColor: '#0084FF',
+  },
+  messageAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  messageText: {
+    fontSize: 16,
     color: '#fff',
+  },
+  messageDate: {
+    fontSize: 12,
+    color: '#B0B0B0',
+    alignSelf: 'flex-end',
+    marginTop: 5,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    backgroundColor: '#fff',
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  sendButton: {
+    marginLeft: 10,
+    backgroundColor: '#0084FF',
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginVertical: 5,
   },
 });
 
