@@ -112,10 +112,11 @@ const HomeScreen = ({ route }) => {
 
         console.log('Response:', response.data);
 
-        if (response.data.message === 'Activity moved to completed') {
-            // Remove the accepted activity from the state
+        // If the activity is successfully moved to completed
+        if (response.data.message === 'Activity moved to completed and notifications created') {
+            // Update the state to remove the accepted activity
             setJoinedActivities((prevActivities) =>
-                prevActivities.filter((activity) => activity.activity_id !== activityId) // Correct field name
+                prevActivities.filter((activity) => activity._id !== activityId) // Filter out the accepted activity
             );
         }
     } catch (error) {

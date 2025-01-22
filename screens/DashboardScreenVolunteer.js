@@ -33,29 +33,28 @@ const PendingActivities = ({ userId }) => {
     fetchPendingActivities();
   }, [userId]);
 
-  const renderActivity = ({ item }) => (
-    <View style={styles.activityCardStyle}>
-      {item.image_url ? (
-        <Image source={{ uri: item.image_url }} style={styles.activityImageStyle} />
-      ) : (
-        <View style={styles.noImageContainerStyle}>
-          <Text style={styles.noImageTextStyle}>No Image Available</Text>
+  const renderActivity = ({ item }) => {
+    console.log('Rendering Activity:', item);
+  
+    return (
+      <View style={styles.activityCardStyle}>
+        {item.image ? (
+          // Ensure you are passing the local file URI as the source
+          <Image source={{ uri: item.image }} style={styles.activityImageStyle} />
+        ) : (
+          <View style={styles.noImageContainerStyle}>
+            <Text style={styles.noImageTextStyle}>No Image Available</Text>
+          </View>
+        )}
+        <View style={styles.activityDetailsStyle}>
+          <Text style={styles.activityNameStyle}>{item.activity_name || 'Unknown Activity'}</Text>
+          <Text style={styles.activityLocationStyle}>{item.location || 'Unknown Location'}</Text>
+          <Text style={styles.activityDateStyle}>{item.date || 'Unknown Date'}</Text>
         </View>
-      )}
-      <View style={styles.activityDetailsStyle}>
-        <Text style={styles.activityNameStyle}>{item.activity_name || 'Unknown Activity'}</Text>
-        <Text style={styles.activityLocationStyle}>{item.location || 'Unknown Location'}</Text>
-        <Text style={styles.activityDateStyle}>{item.date || 'Unknown Date'}</Text>
-        <TouchableOpacity
-          style={styles.completeButtonStyle}
-          onPress={() => handleComplete(item._id)} // Handle completion if needed
-        >
-          <Text style={styles.completeButtonTextStyle}>Complete</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  );
-
+    );
+  };
+  
   return (
     <View style={styles.container}>
       {loading ? (
@@ -249,7 +248,7 @@ const CompletedActivities = ({ userId }) => {
           renderItem={renderActivity}
           ListEmptyComponent={
             <View style={styles.noUpcomingActivitiesContainer}>
-              <Text style={styles.noActivitiesText}>No upcoming activities available.</Text>
+              <Text style={styles.noActivitiesText}>No completed activities available.</Text>
             </View>
           }
         />
@@ -472,9 +471,29 @@ const DiscoverScreen = ({ username, userId, email, role, strength, previous_expe
   );
 };
 
-// ProfileScreen Component with Logout Button
 const ProfileScreen = ({ username, userId, password, email, role }) => {
   const navigation = useNavigation();
+  const [avatarUri, setAvatarUri] = useState(null); // State to hold the avatar URI
+
+  // Function to handle image selection
+  const selectImage = () => {
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        includeBase64: false, // You can set to true if you need base64 encoding
+      },
+      (response) => {
+        if (response.didCancel) {
+          console.log('User canceled image picker');
+        } else if (response.errorCode) {
+          console.log('ImagePicker Error: ', response.errorCode);
+        } else {
+          // Update avatar URI with the selected image URI
+          setAvatarUri(response.assets[0].uri);
+        }
+      }
+    );
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -507,7 +526,17 @@ const ProfileScreen = ({ username, userId, password, email, role }) => {
   return (
     <View style={styles.container}>
       <View style={styles.profileInfoContainer}>
-        <Text style={styles.profileText}>Profile: {username}</Text>
+        {/* Avatar Section */}
+        <TouchableOpacity onPress={selectImage}>
+          <Image
+            source={{
+              uri: avatarUri || 'https://icons.veryicon.com/png/o/miscellaneous/rookie-official-icon-gallery/225-default-avatar.png', // Default avatar if no image is selected
+            }}
+            style={styles.avatar}
+          />
+        </TouchableOpacity>
+        {/* User Info */}
+        <Text style={styles.profileText}>Username: {username}</Text>
         <Text style={styles.userInfo}>Email: {email}</Text>
         <Text style={styles.userInfo}>Role: {role}</Text>
       </View>
@@ -703,6 +732,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  
   // Profile info container
   profileInfoContainer: {
     marginBottom: 20,
@@ -975,6 +1005,14 @@ const styles = StyleSheet.create({
   },
 
   noUpcomingActivitiesTextStyle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#777',
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+
+  noActivitiesText:{
     fontSize: 16,
     fontWeight: '500',
     color: '#777',

@@ -250,66 +250,88 @@ const ActivityDetailsVolunteer = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#00BFAE" />
-      </View>
-    );
-  }
-
   return (
-    <FlatList
-      data={reviews}
-      renderItem={renderReview}
-      keyExtractor={(item) => item._id}
-      ListHeaderComponent={
-        <View style={styles.container}>
-          <Image source={{ uri: image || 'default_image_url_here' }} style={styles.image} />
-          <Text style={styles.activityName}>{activity.name}</Text>
-          <Text style={styles.activityDescription}>{activity.description}</Text>
-          <Text style={styles.activityLocation}>{activity.location}</Text>
-          <Text style={styles.activityDate}>{activity.date}</Text>
-
-          {!hasJoined && (
-            <TouchableOpacity onPress={handleJoinActivity} style={styles.joinButton}>
-              <Text style={styles.joinButtonText}>Join Activity</Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.ratingSection}>
-            <Text style={styles.ratingLabel}>Rate this Activity</Text>
-            <AirbnbRating size={20} onFinishRating={setRating} showRating defaultRating={rating} />
-          </View>
-
-          <TextInput
-            style={styles.reviewInput}
-            value={reviewText}
-            onChangeText={setReviewText}
-            placeholder="Write a review..."
-          />
-          <Button title="Add Review" onPress={handleAddReview} />
-
-          {/* Chat Button follows scroll and remains fixed at bottom-right */}
-          <TouchableOpacity onPress={goToChat} style={[styles.chatButton, { bottom: chatButtonBottom }]}>
-            <Text style={styles.chatButtonText}>Chat</Text>
-          </TouchableOpacity>
+    <View style={styles.screenContainer}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#00BFAE" />
         </View>
-      }     
-    />
+      ) : (
+        <>
+          <FlatList
+            data={reviews}
+            renderItem={renderReview}
+            keyExtractor={(item) => item._id}
+            ListHeaderComponent={
+              <View style={styles.container}>
+                <Image source={{ uri: image || 'default_image_url_here' }} style={styles.image} />
+  
+                <Text style={styles.activityName}>{activity.name}</Text>
+                <Text style={styles.activityDescription}>{activity.description}</Text>
+                <Text style={styles.activityLocation}>📍 {activity.location}</Text>
+                <Text style={styles.activityDate}>📅 {activity.date}</Text>
+  
+                {!hasJoined && (
+                  <TouchableOpacity onPress={handleJoinActivity} style={styles.joinButton}>
+                    <Text style={styles.joinButtonText}>Join Activity</Text>
+                  </TouchableOpacity>
+                )}
+  
+                <View style={styles.ratingSection}>
+                  <Text style={styles.ratingLabel}>Rate this Activity</Text>
+                  <AirbnbRating size={20} onFinishRating={setRating} showRating defaultRating={rating} />
+                </View>
+  
+                <TextInput
+                  style={styles.reviewInput}
+                  value={reviewText}
+                  onChangeText={setReviewText}
+                  placeholder="Write a review..."
+                  placeholderTextColor="#aaa"
+                  multiline
+                />
+                <TouchableOpacity onPress={handleAddReview} style={styles.addReviewButton}>
+                  <Text style={styles.addReviewButtonText}>Add Review</Text>
+                </TouchableOpacity>
+              </View>
+            }
+            contentContainerStyle={styles.listContainer}
+          />
+  
+          {/* Chat Button Positioned at Bottom-Right */}
+          <TouchableOpacity onPress={goToChat} style={styles.chatButton}>
+            <Text style={styles.chatButtonText}>💬 Chat</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: '#f9f9f9', // Background color for the entire screen
+  },
   container: {
-    padding: 16,
+    padding: 20,
     backgroundColor: '#fff',
+    borderRadius: 10,
+    margin: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  listContainer: {
+    paddingBottom: 100, // Space to avoid overlapping with the chat button
   },
   image: {
     width: '100%',
     height: 200,
-    resizeMode: 'cover',
-    borderRadius: 8,
+    borderRadius: 10,
+    marginBottom: 20,
   },
   activityName: {
     fontSize: 24,
@@ -332,23 +354,35 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   joinButton: {
-    backgroundColor: '#00BFAE',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignSelf: 'center',
     marginBottom: 20,
   },
   joinButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   ratingSection: {
-    marginBottom: 20,
+    backgroundColor: '#f9f9f9', // Light background for separation
+    borderRadius: 10,           // Rounded corners
+    padding: 20,                // Padding for inner spacing
+    marginVertical: 20,         // Space above and below the section
+    shadowColor: '#000',        // Shadow for elevation
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,               // Elevation for Android shadow
   },
   ratingLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 16,               // Clear, readable font size
+    color: '#333',              // Text color for good contrast
+    fontWeight: 'bold',         // Bold for emphasis
+    marginBottom: 10,           // Space below the label
+    textAlign: 'center',        // Center align text
   },
   reviewContainer: {
     backgroundColor: '#ffffff',
@@ -368,11 +402,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reviewInput: {
-    borderWidth: 1,
+    width: '100%',
     borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
     padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
+    marginBottom: 20,
+    backgroundColor: '#f9f9f9',
+    fontSize: 14,
+    color: '#333',
   },
   reviewItem: {
     borderWidth: 1,
@@ -453,24 +491,35 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   chatButton: {
-    position: 'absolute',
-    right: 16,
-    backgroundColor: '#007BFF',
+    position: 'absolute', // Fixes the button on the screen
+    bottom: 20,           // 20 pixels from the bottom
+    right: 20,            // 20 pixels from the right
+    backgroundColor: '#007BFF', // Blue background
     padding: 15,
-    borderRadius: 50,
-    width: 60,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 30,     // Circular button
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    elevation: 5,         // Adds shadow effect on Android
   },
   chatButtonText: {
-    color: '#fff',
+    color: '#fff', // White text color
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 16,
+  },
+  addReviewButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  addReviewButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
